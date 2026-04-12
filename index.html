@@ -1,0 +1,3963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LACFD Lifeguard Division — Marine Predictive Services Report</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Source+Sans+3:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* === LACoFD LIFEGUARD BRAND COLORS (from Brand Style Guide) === */
+
+    /* Background & surface */
+    --bg: #f2f2f2;
+    --surface: #ffffff;
+    --surface2: #f7f7f7;
+    --border: #ddd;
+    --border2: #ccc;
+
+    /* Official brand reds */
+    --brand-red: #ed1a3b;       /* Pantone DS 90-1 C — primary red */
+    --brand-red-dark: #ab121c;  /* Pantone P 49-16 U — dark red */
+    --brand-red-bg: #fdf0f2;
+
+    /* Official brand navy/blue */
+    --brand-navy: #002d62;      /* Pantone 654 C — primary navy */
+    --brand-blue: #00a1e4;      /* Pantone DS 225-3 C — light blue */
+    --brand-blue-bg: #e8f5fc;
+
+    /* Official brand gold */
+    --brand-gold: #d4ba6b;      /* Pantone 458 U */
+    --brand-gold-dark: #a08040;
+    --brand-gold-bg: #fdf8ec;
+
+    /* Official near-black */
+    --brand-black: #23191c;     /* Pantone Black 7 EC */
+
+    /* Semantic mappings to brand */
+    --accent: var(--brand-navy);
+    --accent-light: var(--brand-blue-bg);
+    --accent2: var(--brand-red-dark);
+
+    /* Text — high contrast (brand: RED=primary, BLUE=secondary, BLACK=body) */
+    --text: var(--brand-black);
+    --text-mid: #3a3035;
+    --text-dim: #7a6a6e;
+    --text-bright: var(--brand-black);
+
+    /* Status colors mapped to brand */
+    --green: #0d7a4e;
+    --green-bg: #e6f7f0;
+    --yellow: #8a6500;
+    --yellow-bg: #fff8e1;
+    --orange: #b84c00;
+    --orange-bg: #fff1e6;
+    --red: var(--brand-red);
+    --red-bg: var(--brand-red-bg);
+    --gold: var(--brand-gold);
+
+    /* === TYPOGRAPHY (Brand Guide: Futura → Barlow Condensed, Gill Sans → Source Sans 3) === */
+    --font-title: 'Barlow Condensed', 'Arial Narrow', sans-serif;  /* Futura equivalent */
+    --font-body: 'Source Sans 3', 'Gill Sans', Calibri, sans-serif; /* Gill Sans equivalent */
+    --mono: 'DM Mono', 'Courier New', monospace;
+
+    /* Keep alias for compatibility */
+    --sans: var(--font-body);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.5;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* === HEADER === */
+  .header {
+    background: var(--brand-navy);
+    border-bottom: 4px solid var(--brand-red);
+    padding: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+  }
+
+  .header::after { display: none; }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .agency-seal {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    overflow: hidden;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+  }
+
+  .agency-seal img {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+  }
+
+  .seal-inner { display: none; }
+
+  .header-titles { flex: 1; min-width: 0; }
+
+  .report-label {
+    font-family: var(--font-title);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--brand-gold);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .report-title {
+    font-family: var(--font-title);
+    font-size: 20px;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1.1;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .report-subtitle {
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.65);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .header-meta { flex-shrink: 0; text-align: right; }
+
+  .issue-time {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: rgba(255,255,255,0.6);
+  }
+
+  .issue-time span {
+    color: var(--brand-gold);
+    font-weight: 700;
+    font-size: 11px;
+  }
+
+  .validity-badge {
+    display: inline-block;
+    background: rgba(212,186,107,0.2);
+    border: 1px solid var(--brand-gold);
+    border-radius: 3px;
+    padding: 2px 8px;
+    font-family: var(--font-title);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--brand-gold);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 3px;
+  }
+
+  .live-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-title);
+    font-size: 11px;
+    font-weight: 700;
+    color: #6effc8;
+    margin-top: 3px;
+    letter-spacing: 1px;
+  }
+
+  .live-dot {
+    width: 7px;
+    height: 7px;
+    background: #6effc8;
+    border-radius: 50%;
+    animation: blink 1s infinite;
+  }
+
+  /* Status bar */
+  .status-bar {
+    background: var(--brand-navy);
+    border-bottom: 2px solid var(--brand-gold);
+  }
+
+  .status-bar-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 16px;
+    display: flex;
+    gap: 0;
+    align-items: stretch;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    justify-content: center;
+  }
+  .status-bar-inner::-webkit-scrollbar { display: none; }
+
+  .status-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 14px;
+    border-right: 1px solid rgba(212,186,107,0.25);
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: 80px;
+    gap: 0;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-bottom: 4px;
+    flex-shrink: 0;
+  }
+
+  .dot-green  { background: #00cc88; }
+  .dot-yellow { background: #f5cc00; }
+  .dot-orange { background: #e05c00; }
+  .dot-red    { background: var(--brand-red); }
+  .dot-blue   { background: var(--brand-blue); }
+
+
+  .status-label {
+    font-family: var(--font-title);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: rgba(212,186,107,0.7);
+  }
+
+  .status-value {
+    font-family: var(--font-title);
+    font-size: 14px;
+    font-weight: 800;
+    color: #fff;
+    margin-top: 1px;
+    letter-spacing: 0.5px;
+  }
+
+  /* === MAIN LAYOUT === */
+  .main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 16px 12px 32px;
+    display: grid;
+    gap: 20px;
+  }
+
+  /* Section header */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .section-tag {
+    font-family: var(--font-title);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--brand-navy);
+    background: var(--brand-blue-bg);
+    border: 1px solid #b3d1f5;
+    padding: 3px 8px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-family: var(--font-title);
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--brand-navy);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .section-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Panel */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--brand-red);
+    border-radius: 10px 0 0 10px;
+  }
+
+  .panel.alert::before  { background: var(--brand-red); }
+  .panel.warn::before   { background: #e05c00; }
+  .panel.caution::before { background: #e6aa00; }
+  .panel.safe::before   { background: var(--green); }
+
+  /* Loading state */
+  .loading-state {
+    text-align: center;
+    padding: 48px 24px;
+    font-size: 14px;
+    color: var(--text-mid);
+    background: var(--surface);
+    border-radius: 6px;
+    border: 2px solid var(--brand-navy);
+  }
+
+  .loading-bar {
+    width: 200px;
+    height: 4px;
+    background: var(--border);
+    margin: 16px auto;
+    overflow: hidden;
+    border-radius: 2px;
+  }
+
+  .loading-fill {
+    height: 100%;
+    background: var(--brand-red);
+    animation: load-sweep 1.5s ease-in-out infinite;
+    border-radius: 2px;
+    background: var(--brand-red);
+  }
+
+  @keyframes load-sweep {
+    0%   { width: 0%; margin-left: 0%; }
+    50%  { width: 60%; margin-left: 20%; }
+    100% { width: 0%; margin-left: 100%; }
+  }
+
+  /* === HAZARD OVERVIEW GRID === */
+  .hazard-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  @media (max-width: 480px) {
+    .hazard-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .hazard-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 10px;
+    text-align: center;
+  }
+
+  .hazard-card .hc-icon {
+    font-size: 26px;
+    margin-bottom: 6px;
+    display: block;
+    line-height: 1;
+  }
+
+  .hazard-card .hc-label {
+    font-family: var(--font-title);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .hazard-card .hc-value {
+    font-family: var(--font-title);
+    font-size: 30px;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--text-bright);
+  }
+
+  .hazard-card .hc-unit {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 3px;
+    font-weight: 500;
+  }
+
+  .hazard-card .hc-status {
+    font-family: var(--font-title);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 7px;
+    padding: 4px 10px;
+    border-radius: 3px;
+    display: inline-block;
+  }
+
+  .status-low      { color: var(--green);  background: var(--green-bg); }
+  .status-moderate { color: var(--yellow); background: var(--yellow-bg); }
+  .status-high     { color: var(--orange); background: var(--orange-bg); }
+  .status-extreme  { color: var(--brand-red);    background: var(--red-bg); }
+
+  /* === TWO-COL LAYOUT === */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .three-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+  }
+
+  @media (max-width: 600px) {
+    .two-col, .three-col { grid-template-columns: 1fr; }
+  }
+
+  /* === DATA TABLE === */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  .data-table th {
+    font-family: var(--font-title);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #fff;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--brand-red);
+    padding: 8px 10px;
+    text-align: left;
+    background: var(--brand-navy);
+  }
+
+  .data-table td {
+    padding: 11px 10px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-mid);
+    vertical-align: middle;
+    font-size: 14px;
+  }
+
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:nth-child(even) td { background: var(--surface2); }
+
+  .data-table td.val       { color: var(--text-bright); font-weight: 700; }
+  .data-table td.highlight { color: var(--accent2); font-weight: 700; }
+  .data-table td.warn-val  { color: var(--orange); font-weight: 700; }
+  .data-table td.alert-val { color: var(--brand-red); font-weight: 700; }
+
+  /* === FORECAST HOURS === */
+  .hourly-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  @media (min-width: 600px) {
+    .hourly-grid { grid-template-columns: repeat(8, 1fr); }
+  }
+
+  .hour-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 6px;
+    text-align: center;
+  }
+
+  .hour-card .hh-time {
+    font-family: var(--font-title);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+
+  .hour-card .hh-wave {
+    font-family: var(--font-title);
+    font-size: 24px;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .hour-card .hh-wave-unit {
+    font-family: var(--font-title);
+    font-size: 10px;
+    color: var(--text-dim);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .hour-card .hh-period {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 3px;
+  }
+
+  .hour-card .hh-wind {
+    font-size: 11px;
+    color: var(--text-mid);
+    margin-top: 6px;
+    border-top: 1px solid var(--border);
+    padding-top: 5px;
+    font-weight: 600;
+  }
+
+  /* === TIDE TABLE === */
+  .tide-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tide-row:last-child { border-bottom: none; }
+
+  .tide-type {
+    font-family: var(--font-title);
+    font-size: 12px;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .tide-high { color: #fff; background: var(--brand-navy); }
+  .tide-low  { color: var(--text-dim); background: var(--surface2); border: 1px solid var(--border); }
+
+  .tide-time { font-family: var(--font-title); font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: 0.3px; }
+  .tide-sub  { font-size: 11px; color: var(--text-dim); }
+
+  .tide-height { font-family: var(--font-title); font-size: 24px; font-weight: 900; color: var(--brand-navy); text-align: right; }
+  .tide-height span { font-size: 12px; color: var(--text-dim); font-weight: 500; font-family: var(--font-body); }
+
+  .tide-progress {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 5px;
+    overflow: hidden;
+  }
+
+  .tide-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    border-radius: 2px;
+    transition: width 1s ease;
+  }
+
+  /* === NARRATIVE SECTION === */
+  .narrative-box {
+    background: var(--brand-navy);
+    border: 1px solid rgba(0,45,98,0.5);
+    border-left: 4px solid var(--brand-red);
+    border-radius: 6px;
+    padding: 16px;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.75;
+    color: #c8d8f0;
+    white-space: pre-wrap;
+    overflow-x: auto;
+  }
+
+  .narrative-box .nar-header {
+    font-family: var(--font-title);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: var(--brand-gold);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(212,186,107,0.3);
+  }
+
+  /* === BEACH ZONES === */
+  .beach-zones {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  @media (min-width: 600px) {
+    .beach-zones { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  .beach-zone {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+  }
+
+  .bz-name {
+    font-family: var(--font-title);
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--brand-navy);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--brand-red);
+  }
+
+  .bz-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 12px;
+  }
+
+  .bz-stat .bz-key { color: var(--text-dim); font-weight: 500; font-family: var(--font-body); }
+  .bz-stat .bz-val { color: var(--brand-navy); font-weight: 700; font-family: var(--font-title); font-size: 13px; letter-spacing: 0.3px; }
+
+  .bz-rating {
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+
+  .bz-rating-text {
+    font-family: var(--font-title);
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 0;
+  }
+
+  /* === ALERTS BOX === */
+  .alert-box {
+    background: var(--brand-red-bg);
+    border: 1px solid rgba(237,26,59,0.25);
+    border-left: 4px solid var(--brand-red);
+    border-radius: 6px;
+    padding: 14px 16px;
+  }
+
+  .alert-box.warning {
+    background: var(--orange-bg);
+    border-color: rgba(184,76,0,0.25);
+    border-left-color: #e05c00;
+  }
+
+  .alert-box.advisory {
+    background: var(--yellow-bg);
+    border-color: rgba(138,101,0,0.25);
+    border-left-color: #e6aa00;
+  }
+
+  .alert-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+
+  .alert-icon { font-size: 18px; }
+
+  .alert-title {
+    font-family: var(--font-title);
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .alert-box .alert-title          { color: var(--brand-red-dark); }
+  .alert-box.warning .alert-title  { color: #b84c00; }
+  .alert-box.advisory .alert-title { color: #8a6500; }
+
+  .alert-body {
+    font-family: var(--font-body);
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--text);
+  }
+
+  /* === FOOTER === */
+  .footer {
+    background: var(--brand-navy);
+    border-top: 3px solid var(--brand-gold);
+    padding: 16px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: rgba(212,186,107,0.7);
+    margin-top: 8px;
+    display: flex;
+    gap: 12px;
+    flex-direction: column;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .footer a { color: var(--brand-blue); text-decoration: none; font-weight: 600; }
+
+  /* === REFRESH BUTTON === */
+  .refresh-btn {
+    background: var(--brand-red);
+    border: none;
+    color: #fff;
+    font-family: var(--font-title);
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    padding: 14px 24px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: background 0.2s;
+    border-radius: 3px;
+    width: 100%;
+    touch-action: manipulation;
+  }
+
+  .refresh-btn:hover  { background: var(--brand-red-dark); }
+  .refresh-btn:active { transform: scale(0.98); }
+
+  /* === SURFLINE STYLES === */
+  .sl-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    padding: 3px 10px;
+    border-radius: 1px;
+    text-transform: uppercase;
+    border: 1px solid;
+  }
+
+  .sl-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+
+  @media (max-width: 1100px) { .sl-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px)  { .sl-grid { grid-template-columns: 1fr; } }
+
+  .sl-spot-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .sl-spot-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 3px;
+  }
+
+  .sl-spot-card.sl-flat::before   { background: #5a7090; }
+  .sl-spot-card.sl-poor::before   { background: #5a7090; }
+  .sl-spot-card.sl-fair::before   { background: var(--yellow); }
+  .sl-spot-card.sl-good::before   { background: var(--green); }
+  .sl-spot-card.sl-epic::before   { background: var(--accent); }
+  .sl-spot-card.sl-danger::before { background: var(--red); }
+  .sl-spot-card.sl-loading::before { background: var(--border2); }
+
+  .sl-spot-header {
+    padding: 10px 12px 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .sl-spot-name {
+    font-family: var(--cond);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-bright);
+    letter-spacing: 0.5px;
+  }
+
+  .sl-spot-region {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .sl-rating-pill {
+    font-family: var(--cond);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 7px;
+    border-radius: 1px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .sl-spot-body {
+    padding: 0 12px 10px;
+  }
+
+  .sl-wave-display {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+
+  .sl-wave-ht {
+    font-family: var(--cond);
+    font-size: 32px;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .sl-wave-unit {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .sl-wave-plus {
+    font-family: var(--cond);
+    font-size: 14px;
+    color: var(--text-dim);
+  }
+
+  .sl-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px 8px;
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border);
+  }
+
+  .sl-detail {
+    font-family: var(--mono);
+    font-size: 9px;
+    display: flex;
+    justify-content: space-between;
+    gap: 4px;
+  }
+
+  .sl-detail .sl-dk { color: var(--text-dim); }
+  .sl-detail .sl-dv { color: var(--text-bright); font-weight: bold; }
+
+  .sl-conditions-text {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text);
+    line-height: 1.5;
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Cam section */
+  .cam-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  @media (max-width: 900px) { .cam-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .cam-grid { grid-template-columns: 1fr; } }
+
+  .cam-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .cam-header {
+    padding: 8px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cam-name {
+    font-family: var(--cond);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-bright);
+    letter-spacing: 0.5px;
+  }
+
+  .cam-live-badge {
+    font-family: var(--mono);
+    font-size: 8px;
+    color: var(--brand-red);
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .cam-frame-wrap {
+    position: relative;
+    background: #000;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .cam-frame-wrap iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    pointer-events: none;
+  }
+
+  .cam-link-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10,15,26,0.85);
+    cursor: pointer;
+    transition: background 0.2s;
+    text-decoration: none;
+  }
+
+  .cam-link-overlay:hover { background: rgba(10,15,26,0.6); }
+
+  .cam-play-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(0,170,255,0.2);
+    border: 2px solid var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+
+  .cam-open-text {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  .cam-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.7;
+  }
+
+  .sl-api-note {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* Blink animation */
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  .blink { animation: blink 1.2s ease-in-out infinite; }
+
+  /* Fade in */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .fade-in { animation: fadeUp 0.5s ease forwards; }
+  .fade-in-2 { animation: fadeUp 0.5s ease 0.1s forwards; opacity: 0; }
+  .fade-in-3 { animation: fadeUp 0.5s ease 0.2s forwards; opacity: 0; }
+  .fade-in-4 { animation: fadeUp 0.5s ease 0.3s forwards; opacity: 0; }
+
+  /* Pulse glow for live data */
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,204,136,0.4); }
+    50% { box-shadow: 0 0 0 4px rgba(0,204,136,0); }
+  }
+
+  .live-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--green);
+    letter-spacing: 1px;
+  }
+
+  .live-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: blink 1s infinite;
+  }
+
+  /* error state */
+  .error-note {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    text-align: center;
+    padding: 8px;
+  }
+
+  .source-note {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-top: 8px;
+    text-align: right;
+    letter-spacing: 0.5px;
+  }
+
+  /* Risk meter */
+  .risk-meter {
+    margin-top: 8px;
+  }
+
+  .risk-bar-container {
+    height: 6px;
+    background: var(--border);
+    border-radius: 1px;
+    overflow: hidden;
+    margin: 4px 0;
+  }
+
+  .risk-bar-fill {
+    height: 100%;
+    border-radius: 1px;
+    transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .risk-label-row {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  /* UV display */
+  .uv-scale {
+    display: flex;
+    gap: 3px;
+    margin-top: 8px;
+  }
+
+  .uv-block {
+    flex: 1;
+    height: 8px;
+    border-radius: 1px;
+    opacity: 0.3;
+  }
+
+  /* === ZONE SELECTOR === */
+  .zone-selector-wrap {
+    background: var(--brand-navy);
+    border-bottom: 2px solid var(--brand-gold);
+    position: sticky;
+    top: 76px;
+    z-index: 90;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+
+  .zone-selector-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .zone-selector-inner::-webkit-scrollbar { display: none; }
+
+  .zone-selector-label {
+    font-family: var(--font-title);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--brand-gold);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .zone-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+
+  .zone-chip {
+    font-family: var(--font-title);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 3px;
+    border: 1.5px solid rgba(212,186,107,0.4);
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.85);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+  }
+
+  .zone-chip:hover {
+    border-color: var(--brand-gold);
+    color: var(--brand-gold);
+    background: rgba(212,186,107,0.12);
+  }
+
+  .zone-chip.active {
+    background: var(--brand-red);
+    border-color: var(--brand-red-dark);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(237,26,59,0.4);
+  }
+
+  /* Zone detail banner */
+  .zone-detail-banner {
+    background: var(--brand-red-bg);
+    border-bottom: 3px solid var(--brand-red);
+  }
+
+  .zone-detail-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .zone-detail-left { min-width: 0; }
+
+  .zone-detail-name {
+    font-family: var(--font-title);
+    font-size: 18px;
+    font-weight: 900;
+    color: var(--brand-red-dark);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .zone-detail-bounds {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--text-mid);
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .zone-clear-btn {
+    background: #fff;
+    border: 2px solid var(--brand-red);
+    color: var(--brand-red);
+    font-family: var(--font-title);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 7px 14px;
+    border-radius: 3px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    touch-action: manipulation;
+    transition: all 0.15s;
+  }
+
+  .zone-clear-btn:hover {
+    background: var(--brand-red);
+    color: #fff;
+  }
+
+  /* Zone-specific highlight in beach zones section */
+  .beach-zone.zone-active {
+    border-color: var(--brand-red);
+    box-shadow: 0 0 0 2px var(--brand-red-bg), 0 0 0 3.5px var(--brand-red);
+  }
+
+  .beach-zone.zone-dimmed {
+    opacity: 0.4;
+  }
+
+  /* === COLLAPSIBLE ALERTS === */
+  .alert-box {
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .alert-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .alert-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-title);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 3px;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    background: rgba(0,0,0,0.08);
+    color: inherit;
+  }
+
+  .alert-toggle-btn:hover { background: rgba(0,0,0,0.16); }
+
+  .alert-chevron {
+    font-size: 10px;
+    transition: transform 0.25s ease;
+    display: inline-block;
+  }
+
+  .alert-box.collapsed .alert-chevron {
+    transform: rotate(-90deg);
+  }
+
+  .alert-body-wrap {
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.25s ease, margin-top 0.25s ease;
+    max-height: 600px;
+    opacity: 1;
+    margin-top: 10px;
+  }
+
+  .alert-box.collapsed .alert-body-wrap {
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+  }
+
+  .alert-acknowledged { opacity: 0.55; }
+
+  .alerts-expand-all-btn {
+    font-family: var(--font-title);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 3px;
+    border: 1.5px solid var(--brand-red);
+    background: transparent;
+    color: var(--brand-red);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* === SURFLINE PROXY DATA CARDS === */
+  .sl-top-bar {
+    background: var(--brand-navy);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    border-left: 4px solid var(--brand-gold);
+  }
+
+  .sl-card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  @media (min-width: 700px) {
+    .sl-card-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  .sl-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .sl-card-stripe {
+    height: 4px;
+    width: 100%;
+    flex-shrink: 0;
+  }
+
+  .sl-card-header {
+    padding: 10px 12px 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sl-card-name {
+    font-family: var(--font-title);
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--brand-navy);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    line-height: 1.2;
+  }
+
+  .sl-card-region {
+    font-family: var(--font-body);
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .sl-card-rating-pill {
+    font-family: var(--font-title);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .sl-card-body {
+    padding: 10px 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* Wave height display */
+  .sl-card-wave-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .sl-card-wave-ht {
+    font-family: var(--font-title);
+    font-size: 36px;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .sl-card-wave-unit {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+
+  .sl-card-human {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--text-dim);
+    font-style: italic;
+    align-self: flex-end;
+    padding-bottom: 4px;
+  }
+
+  /* Section label */
+  .sl-card-section-label {
+    font-family: var(--font-title);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: -4px;
+  }
+
+  /* Swell rows */
+  .sl-card-swell-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .sl-card-swell {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    flex-wrap: wrap;
+  }
+
+  .sl-swell-tag {
+    font-family: var(--font-title);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 1px 6px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .sl-card-swell.primary .sl-swell-tag {
+    background: var(--brand-navy);
+    color: #fff;
+  }
+
+  .sl-card-swell.secondary .sl-swell-tag {
+    background: var(--surface2);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+
+  .sl-swell-ht  { font-family: var(--font-title); font-weight: 800; color: var(--brand-navy); font-size: 13px; }
+  .sl-swell-per { font-family: var(--mono); font-size: 11px; color: var(--text-mid); }
+  .sl-swell-dir { font-family: var(--font-title); font-weight: 700; color: var(--text-dim); font-size: 12px; }
+
+  /* Wind row */
+  .sl-card-wind-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .sl-wind-type {
+    font-family: var(--font-title);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+  }
+
+  .sl-wind-spd {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-mid);
+    font-weight: 500;
+  }
+
+  .sl-wind-note {
+    font-family: var(--font-body);
+    font-size: 10px;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  /* AM/PM conditions */
+  .sl-card-cond {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--text-mid);
+    line-height: 1.5;
+    background: var(--surface2);
+    border-radius: 6px;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+  }
+
+  .sl-card-cond strong { color: var(--brand-navy); }
+
+  /* Footer */
+  .sl-card-footer {
+    display: flex;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .sl-card-fullbtn {
+    flex: 1;
+    display: block;
+    text-align: center;
+    padding: 9px 8px;
+    font-family: var(--font-title);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--brand-navy);
+    background: var(--brand-blue-bg);
+    text-decoration: none;
+    transition: background 0.15s;
+    border-right: 1px solid var(--border);
+  }
+
+  .sl-card-fullbtn:hover { background: var(--brand-navy); color: #fff; }
+
+  .sl-card-cambtn {
+    display: block;
+    text-align: center;
+    padding: 9px 10px;
+    font-family: var(--font-title);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--brand-red);
+    background: var(--brand-red-bg);
+    text-decoration: none;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+
+  .sl-card-cambtn:hover { background: var(--brand-red); color: #fff; }
+
+  .sl-card-unavail { opacity: 0.75; }
+  .sl-card-loading  { opacity: 0.6; }
+
+  /* ── COLLAPSIBLE SECTIONS ─────────────────────── */
+  .collapsible-section .section-body {
+    overflow: hidden;
+    max-height: 6000px;
+    opacity: 1;
+    transition: max-height 0.35s ease, opacity 0.25s ease;
+  }
+  .collapsible-section.sec-collapsed .section-body {
+    max-height: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .section-toggle-btn {
+    display: flex; align-items: center; gap: 5px;
+    background: none; border: 1px solid var(--border);
+    border-radius: 4px; padding: 3px 9px;
+    font-family: var(--mono); font-size: 10px;
+    color: var(--text-dim); cursor: pointer;
+    white-space: nowrap; flex-shrink: 0;
+    transition: background 0.15s, color 0.15s;
+  }
+  .section-toggle-btn:hover { background: var(--bg-card); color: var(--text); }
+  .tog-chevron {
+    display: inline-block; font-size: 9px;
+    transition: transform 0.3s ease;
+  }
+  .sec-collapsed .tog-chevron { transform: rotate(-90deg); }
+  .tog-label { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
+
+  /* ── UNIFIED BRIEFING BLOCK ───────────────────── */
+  .ub-block {
+    background: var(--brand-navy);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .ub-masthead {
+    background: linear-gradient(135deg, var(--brand-navy) 0%, #001a3d 100%);
+    padding: 14px 18px;
+    border-bottom: 3px solid var(--brand-red);
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+  .ub-masthead-title {
+    font-family: var(--font-title); font-size: 17px; font-weight: 900;
+    color: #fff; letter-spacing: 2px; text-transform: uppercase;
+  }
+  .ub-masthead-sub {
+    font-family: var(--mono); font-size: 10px;
+    color: rgba(212,186,107,0.8); letter-spacing: 1px; margin-top: 2px;
+  }
+  .ub-masthead-time {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--brand-gold); letter-spacing: 1px; text-align: right;
+  }
+  .ub-body { padding: 0; }
+  .ub-row {
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .ub-row-label {
+    font-family: var(--font-title); font-size: 10px; font-weight: 800;
+    color: var(--brand-gold); letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .ub-row-label::after {
+    content: ''; flex: 1; height: 1px; background: rgba(212,186,107,0.2);
+  }
+  .ub-conditions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 8px;
+  }
+  .ub-cell {
+    background: rgba(255,255,255,0.05);
+    border-radius: 7px; padding: 10px 12px;
+    border: 1px solid rgba(255,255,255,0.07);
+  }
+  .ub-cell-label {
+    font-family: var(--mono); font-size: 9px; color: rgba(255,255,255,0.45);
+    letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px;
+  }
+  .ub-cell-value {
+    font-family: var(--font-title); font-size: 20px; font-weight: 900;
+    color: #fff; line-height: 1;
+  }
+  .ub-cell-unit {
+    font-family: var(--mono); font-size: 9px;
+    color: rgba(255,255,255,0.5); margin-top: 3px; letter-spacing: 0.5px;
+  }
+  .ub-cell-badge {
+    display: inline-block; margin-top: 5px;
+    padding: 2px 7px; border-radius: 3px;
+    font-family: var(--font-title); font-size: 10px; font-weight: 800;
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+  .ub-alert-banner {
+    background: rgba(237,26,59,0.15); border-left: 3px solid var(--brand-red);
+    border-radius: 4px; padding: 8px 12px; margin-bottom: 6px;
+    font-family: var(--font-title); font-size: 12px;
+    color: #ff8899; letter-spacing: 0.5px;
+  }
+  .ub-noalert {
+    font-family: var(--font-title); font-size: 12px; color: #00cc88;
+    letter-spacing: 1px;
+  }
+  .ub-outlook-table {
+    width: 100%; border-collapse: collapse;
+  }
+  .ub-outlook-table th {
+    font-family: var(--font-title); font-size: 10px; font-weight: 800;
+    color: rgba(212,186,107,0.7); letter-spacing: 1.5px; text-transform: uppercase;
+    padding: 5px 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .ub-outlook-table td {
+    font-family: var(--mono); font-size: 12px; color: #fff;
+    padding: 6px 10px; border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .ub-spot-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+    flex-wrap: wrap;
+  }
+  .ub-spot-row:last-child { border-bottom: none; }
+  .ub-spot-name {
+    font-family: var(--font-title); font-size: 12px; font-weight: 800;
+    color: #fff; min-width: 130px; letter-spacing: 0.3px;
+  }
+  .ub-spot-pill {
+    font-family: var(--font-title); font-size: 10px; font-weight: 700;
+    padding: 2px 8px; border-radius: 3px; letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .ub-wc-text {
+    font-family: var(--font-body); font-size: 13px;
+    color: rgba(255,255,255,0.8); line-height: 1.65;
+    max-height: 220px; overflow-y: auto;
+  }
+  .ub-wc-text p { margin: 0 0 8px; }
+  .ub-source-bar {
+    background: rgba(0,0,0,0.2); padding: 7px 18px;
+    font-family: var(--mono); font-size: 8px;
+    color: rgba(255,255,255,0.3); letter-spacing: 1.5px; text-transform: uppercase;
+    display: flex; gap: 16px; flex-wrap: wrap;
+  }
+  .ub-loading {
+    font-family: var(--mono); font-size: 11px;
+    color: rgba(255,255,255,0.35); padding: 8px 0;
+    display: flex; align-items: center; gap: 8px;
+  }
+  @media (max-width: 600px) {
+    .ub-conditions-grid { grid-template-columns: repeat(2, 1fr); }
+    .ub-masthead { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-inner">
+    <div class="agency-seal">
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHgAAAB4CAIAAAC2BqGFAAABAGlDQ1BpY2MAABiVY2BgPMEABCwGDAy5eSVFQe5OChGRUQrsDxgYgRAMEpOLCxhwA6Cqb9cgai/r4lGHC3CmpBYnA+kPQKxSBLQcaKQIkC2SDmFrgNhJELYNiF1eUlACZAeA2EUhQc5AdgqQrZGOxE5CYicXFIHU9wDZNrk5pckIdzPwpOaFBgNpDiCWYShmCGJwZ3AC+R+iJH8RA4PFVwYG5gkIsaSZDAzbWxkYJG4hxFQWMDDwtzAwbDuPEEOESUFiUSJYiAWImdLSGBg+LWdg4I1kYBC+wMDAFQ0LCBxuUwC7zZ0hHwjTGXIYUoEingx5DMkMekCWEYMBgyGDGQCm1j8/yRb+6wAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABmJLR0QA/wD/AP+gvaeTAAAAB3RJTUUH6gQLEA4qAJT0rQAAXO9JREFUeNrdvXd8VEX3P35m7r3bS3qvkIQAgdAJvYPSEUSxYEMUBVGx94bYe9cHFcVCBwsgHem9hZBGeq+b7XvvzPn9cXc3Aevz+Tzl8/1d8uK1ye7eO/OeM+ecOZXAf+8iBCgliMA5Bv8oimJclDk5PiwlITQx3hIbZYkI04WaNQaDqNOARhSoAADAGZEV7vVxu1tubfM1trir6+0VVfbSypbySltNXavMlOA9KSWEAOeI+M+P8l812f/KIyklHCE4b5NRl9k5OrtbdFZGVOdkS3S4zmygokQpIQgCgohEQpCACpSIABQAETkgR1QIyARlAIUAR46ygg6XUtfkKSq3n8uvO32+7kJRrdPlDSwtoSri//8GmhICpJ1+46PDhgxIGjogMTsjPCZCq9FSRBGJHqVQURspGaI0+ghJZxU1FkEyCIKGChpKBf+YETkqnMmceRXZpXgdsqfV527wuRuYt47INopuAopX5rUN3jP5LfuOVuw7WlJV2+IfCSWA8J8E/D8ENKUUEVUSDgsxjh2SfsWItOxuoaEWAUBUiFnUx2utqQZrqt4Uq9FZCKGISMilw8P28XZEKPgh9SvIuc/b5nbUumwXPW0lirtCYnZCeHMbP5XXtGV30Y79hc2tLgAgBAghHRnX/8NAq1wYEQFIdre42ZN7jB6UEBMuMSRciNRZu5gis0whKZLWrC4DIQQRARAQgQRH+OfjRP//CEAIAAncBAghstfhaClpa8z12c5T1kQJ1DQpuw+Wr/rx7Onz1QBIiJ+D/78KdBBigZKRg9LnzsrO6RkhSSijWWvNssb1M4elCYIGVUBRRZa0D4n4AVRRI4RwxoAQdXMEPxEENAhuO/qIQAgBioCEEKZ47c3FrbVHPa25GmJXfPTw2YYvV5/ZdaiAcxVuwjn/fwno4JYkhIwbmn779f37dA3lnCma+JDYQWFx/TRaCyKqOKlkG0BV/SJXJ0wIoZQGgW6HUGURiJzz4AeQcyoI6rvqBzpAH1wYIIT4PG3NtUfbqg5SpZJQ4VRu68ffHN++rwARKaWI/xbW/a8HmlI/1+ufnbR4Xs7g7AiZIepSo5LHWqN7UCoiIiAHAgAUCBAEjoicE0JIB1iD/wcWj+TlnjebzQlJiYhIgHDklNL6urrmpqaUTp10Ol1QDFBK1XsKguC/g38lg6tJOJdtdecaSreht0QjiAdPN7752YFjp8v/TYz7Xwl0cIgxkdYl84dNG5cMnDFtSnTnCSFRPVX5BsABKAGibufLqRKRAMm/cOH0iZNnTp8+cujwHQvvmnXNbNknSxpp3LCRg4cNefbFpYosU0GglL7x8qsfvvNuWFiYwvirb70+evw45OjxepoaG6NjYiRJumTNIPhMFXGV5FlrfW598Y/UVw5Eu3Fbyeuf7q2tt1FKAqv2f+yi1C+15kztc/THO0v23Jm769H68v2MM0RknHHOOOcckQcuRGSMIWJNdc2PGzblnjunYj1myPCszhlPP/b4N199XVlZiYiKrCDitAlXPvXY44jo8XgQcd+evWFa40+bfkDEZx9/Mi0u0evxlpeVjR48LDs9c3Cf/jt+2aY+ouPj1Cf6R8AUdXicKQ3lB87terRk7/yjPyyYM7W3SoKBSf2fuQSBAkBCTMjy12aX7l94bttdZbmrZJ8TEXkQ4sBUFUVRp6rO+aP3PshMSh3Rf1B8SPhLz72AiDfPuWHBrfMQ8cTRYxeLixFRlmVEnHHl5EeWPIiIDocDER978KFJY8ara1NXW5sUEZ2fd+HJhx8dNXAwIr7/9jsRZmtTY1NwOTui7MfajzjjnCGi7HOWnV99bttdpfsX/eO1q+NjQgBA+D+CtcpXAWDSmG7Hfry7aPfteb8+Z2+5eAnEHag4+Fqd84XzeTGWMJUqN61bb6GaosKi5R9/GmW0Du0zoFd616+/XIGIXq8XEWdNmf7wfUsQ0eN2I+Jdt91+4+w5KtDlZeVJETEFFy5s3bw51hL2wtPPtrS0bFi3vqampuOi1lTX1FRVY4cxtIPOFBVue8vF3F+fL9o9/9iPd00c3R38J/j/KtwqxJJIn7xnbMn+xee23lGeu5YpvgDKHDEwC8ZUqsw/n/fNV18jos/nQ8TV336XldbF6/P5mcbgYS8/v/TIoUPJkbEF+QWIqO4FdRNcPXX6VZOmHDtydN2q1WWlpV9//mVKVFxNdQ0iLnvmuazUtIryipqamn179g7pO6BLUuqxI0cQkSn+PdTc1Dykd7+eaV1qa2sRUVGU4D5rh5vLiMiYt+z8mnO/zC/Zd8+T94yVRAH+i2xEoBQAIsPMK9+9tmz/3We3LWmpP4uInCucKzwAsaIoCmPB7X//wnumjLsiSKRHDh1Oioi+WFSsAn3rDXMX3Hp7U1NTpMFy+uQpRFRkWQUFEZ957ImBPXuPHTK8X/eeryxdhojXX3V1t9S0sUOGJ4ZF7ti2/cSRY3HWsKrKKkS8bubsCaPGBFfUaXeMzBkypN+Avl17VJSVq39vamzkiJxjkLQD42eI2Fp35uz2JWX77/763TmRYcbglP/DKBMA6JYWs2fV/KLd8/P2vex1NapShQeGrLJj9belTz87c/JURHxl6bLrZl4dxB0RB/fpf92s2ZzzvNzzyRExKz7/AhGvmXbVwf0HAhBzzrHjTu+4948dPrJ+9dqyklL174vm35nVOWPeDTd1Te782UefqMOQFWXSmPE3XXPd8aPHeqZntra0IGJe7vluKWm/bN4SHExHAudMQUSPqyFv30tFu+fvXjW/a1oM/IdZtir6hvRLPb1l4YVt84pPfsFZgF34ZQwqisIUBRG/+PQfH777/tkzZ3Ky++Zk97l5zvW3z71ZVSRUvnnm1Ol+3Xpmde7So3PGYw88dIlWoE5b/ccxgHH7u+qH/VxY8S/D0UOH333jrZ3bdqifdzpd186YaQTxuquufuS+JQN79Ha7PYh4y/U3EoDPPvoYEctKS51OZ/tz/c9QOHLG5OKTy/O2zzu5ZeHgvinB6f8HUCYAMH54Zt7ORee2zqu8sLFd7gXmrO70lpaWhXcs6JnRddP6DSrVvPnKa1ZBO+/Gmy5jkU6H8/jRYzXV1UFtrKOYupSH8kvWgHNFUWRZDi5Px3VS6XT/r/vGjxiVe+bsyi9X9OzcZfzQkYi4btXqnl26zrhy8vJPPkXE7p3SN65dr/ITWZY77Bu/QlKZv/Hc1tvzdi0aP7xLEIR/Oy1fObprwZ7F57bMry3ZHmAXDC9VJ37a+EPf7j3NVLNk0WJE9Hq8ss+HiD+s3xBlDjl7+gwiqiTfkSEEWc0lu/hyhC8H/HehDy6kH3SfDxGfevTxYX0HIGLXlM6ff/rZg4vv+/rLFa+8uGxAj148IFU6DomrWDMFEWtLdp7ZOq9gz72TRnf9H9C18E98lBLGccKIzHeeneBxu6K73hSVPAI5A0IDpz4ghNhaW4GQndt3jB039t6HHrh3wd29+vTO7NaVc44Imd26/rpzD+PKoKFDOKJqzQAA1bhBKQVCAIP2UAQAUI15fhr6jeUUeYd3AQBo4CivjgcAgudyq9XSo1evb1d+U3Ah/+PP//Hjxk319fWrv/3ug88+MZmM9y9a/Nqyly8WXxyQM1Cr1QZmRAEIIDOFdqZSeGvN0SljMwtKWgtLGgWB/OuPjuoCDu2fkrdz0bkt8+vL9rWLvgAVqPL99Zdeycnu43a71b8/dN+SjMSU1tZWVdPiyG2treong9/FS0iTcaZw3k7aGLy4SmIY+FKHd9r3gfp19rtbQd1tu3fu2v/rPkS87+579EAeWfJgU2NjenzSiIGDV36xYur4K2dcOfkSUeG/sYKI9WV7z2ydl7dz8dD+qfDPyMa/9TnVTtQ9I2bl27NE6olIvzY6dYyfloEg+GmZMSYIAmd8/IiReoPhh61bOKDP6x3ap39Gt67frFnFOaoE6bc4EL99FAgB5IAIpN2oxBWvz9Xkc9Z73I2yt1HxObns4uhDVACBUIFQrSDoRY1FowvV6qM0xkjJEEZFHQStUciBEAJEtcOqdkFEFARBkRVREhfefue61asv1lYtvP2Oggv5uw/tp4Lg8XiyOme8/eH7k6ZOkX2yIAqqYZYAcFQolepKdjQVfufj2usXrzlfUBc0ov35Jf71UhDCOUaFW95/fqpO9JoSpwRRVleKKUwUxbNnzj5y35IePXtOmzljw88/TRwzfsk9i19/922dTvf6e+98+/VKWZElUfJbdAJYYPv2p4RSzpmnrcbZXOBsKXR7qn2sFdHLASnjhCEwQhQkqkmIABcJCAgCRUqQUAG0khii08ebQtKM4ek6czyhAiAioGpCUk1KlFLGGKEEAB5+8rHrb56r0WgO7Nv/8luvU0F4demyO+9ZOGnKFM4Y+F0JoJq9EJEQETmLTh0j+xzOyh8/eGHK7AXf1Tc5/Nzuf0/RokC/fGv2wB4WYh3UqdfNyP2U4mefiJTSC3l5V44aIwlSZlY3r8cbERW5Yc3aZ154/sHHH2WMtZuV1R3gHxoCAAGChHgdNbaak/bGM25vjUJdhIGmlUj1sljjFWq9QoNCbF7BycDLCfdvIK6jaBBZiMQiNDxGI8frfNGUmSiTQESdVhtrDe9hje2rM8Viu1WawKWoqIMfPWjosFEjn33xhUXz7zx5/MQX332Tlp52sbh40fwFy954tWd2tqIooigGzH6MEPHiqc/BdvjQ2bab7l2lMPa/ZR1UoJzxp+4dd+vVGR5MSs+5j1ARAFVHq8orft295/DBQw88+vDRw0eunT5z2euv9O7b9+svV+zZvsNsta7atF6n03W0hRJCEFW7PuXInY15zWV7bY48TjyCj+jKZU2uS8qzSaVu0uITvBw4AAUgBKnfFKsiBAiEq8ZsIBS4VmBhgpJskLtZvd1N3kSRaThFg8XcJSxxpDkykxAafK6fO3HOGJMk6dCBg7ded+PwUSNkRTmw99fdhw8yRbl6yjSnyyUIwvcb1qVlpHPOCaEBTgmISv6hN41YsXxN/rNvbaOU8j/1zvwZ0Cr3mTIu652nxzg8UsaghzWGCEROCFVpgTEmiuLWnzfPnDz11vm3v/PRBxvXrb/luht+2LplyIhhDrsdAExms6qQUioEqIkToAhgbzjTcHGrw3URBK6rAd1Rm/ZQs1Tiok4FBQoSAZFiUInCv5gB4UBlRIUjRzQIcieDd0C4e6DVF4PIiUmXFtlpgjm6B0GCwAO2f65SNCGkrq5u3ferlz733C97dlnMlmEDBhJC88tL3nn9zY/fff/Hnb9kdOmiEhYCAHJCqNfdVHDgJbPOd8+zO3/Ydk7Vyv5poFVMkuJD1358nUGjxPW8OyS6B3JGqBDU5LweD6WCpJGOHDo8/YqJQ4YNW/3Dhg/fe/+5J586eOJ4SmpKW1vb6VN5aekpsbHRjDHVM0AIdbWV1eZvsLedJyIxFDHDLw2aw020xUckgWsJUEIQLnGM/MFgA+QFHVwngAQIA/BxInMWJngHhDsnRPo6aRTGLZZuMV1mGCxJqgZDKAUgp0/ncq706ZPtdDiqq2vcTuc106+6csrkhrp6APhq9XfPPvFUZteu11w/R+WB6mNUKFrrTlef+cDpE2fN/668uvk3fsu/DfTnr80e1i9EEzk+sdtM5AwoBfTPnRAye9qMHj17Pvn8swBQmF9wxcgx46+c8OHyz7b/8svwEcMbm9seuGu+WaptaRPHTb/19jtvRQTOPfWFPzdWbmcapi9H0/pq3YFm6kbUCygS8IsuVDk3EEBEQikicq8POL/EdQsAoiBoNGoMEiHqpztMgBIqc3BzrqeewaGO6XGeZEp8YkTC2KjOV4iSrr6+6dnHHnc3n3G4vdk5Vz/+9CMA8OYrrz3/xFPHzp/tlNZ5eP+c8Vde8cRzz3DOt/+yrU+/vhEREUE6U7GuPL/G27B9z/GW25as+hOgf//Aojqwb5jR97bZXbwkLrXXbUAoBI4AGNhxCmOPLHmgtbllzIRxEZERaenp77399q23z+varVtpacWCm2+YNEI7/5aBfXpYV3+35sjJmjEjMwuPvN/SckTyidbV9dYPS7T5LtAKqBMIAOGoClgCRMUZEIkgMJdbx9HYOVkXF62PDNVFhesiw7WRobrIcD2hvvpGlCQiBPRFDJxU0K/cgI4CEE2+U7+3UfAISoaxyZVLHRfrWqSF8xYO6Np65639xwxL/GHTz/sOlo6dMHbQ0MEer/fJBx+ZOeea62+am9Wzh9lkXnL3PY898NDkaVMTEhM45zSgpQIQc0R6Q+W59CRobOVn8qpV6P4WRau0HB8Tsv7Ta4w6IbHvfebQNERGQFBJTP2YLMsajeb4kWNXjh4zauzYV956/eH7lhiMxuVfr7iQl794/k3zr00e0D+5odGu04ohFu1rHxxpa5Mfv68/O9FmWl6qLXGDUeQCAQ5+dcTPA4hKlZRQEAXFZjdmpZXcOuWQrUlhCgZOjQQIYzwyNGRMvYe+940ChGpE4Iick47nSoJ+FYcSygCcsjvZQBek5VrlpW/sW3jbgJz+CfWNbSIVQkKNr7+7F805b73/FgAsWbR43569h8+crCivuO6qWbU1td+sW91/4ADOefDMGWTW9ubCihNvuTx8+u3fVdW2/q629ztAqzLwtScmXzUuQYgYldRtNnIGqk4a0OQeWLj4YnFxRmbmG++9I4jiDTOvLiwoHDZq5MeffxYWHr5w/oK+nSsnjOlW32CXJKqe4yKspte/OMXPNL9SZWqz+8AoAFNH4I/nQDUMg1IggF4f83iJ02vplbnvkRt/fPPd4Rfq9ERQpU0wbK9YVMquv+KRjN6GR9/2MgaEEIOOaDWAgJwTRACC6j9AIIRTMLmxSoeLotvm39Wvb/fw5haXJAnqOTMm0vLI81uunvfqlZPGOZ3OkydONNTWP3Tvfd179li+8quwsDBVr8BALIOfKjkjVKjIXa0071i/rXLJ8z/97hFG/F2Uc/okTx2T5ObWjLSJAACEQsBc4HK65l5z3cBBOfc99MBnH33cr3vPDVt//vX4keKi4uSUZPUmRqNJp5U8Xh8VCABSQhBoU6vz3puyX/7o2EsFdY+boptkWfBz1YDSJwqgMKW1TSBElxxHemfKGSmlA7I2v/rGo6ebI8KjZMZoIHAJCSKAlgirPtn06WMRd361jJ7J1+eV8NP53rJqBkDNJhRFwhhBULFmgDpOm/XwoNgw9/YB/bqFBVFWNRBZ5iaTSavTAYBG0gwdNmzM0OEJSYkbNv+kGrwIECpQQgkGdHnVsY4IMRkTC/efmjxaWvNT8sETZZSQy6JDfsOjkQDAy49NSIjUhXaeaQ5LQ2SEUAKgytzvV35z5tSpVZvWJ6emXD3n2pbW1g/ffe/2BXeGhYcFbTfmkPDPPvlq/MhkWeYQZJwEPF551ODkDc3NlReaR2rNDs5UZqdCzFpsWpPBcOUwz7yrimaMPJWVUt0pdlf++ZRV24eYwuqYrAB6gKs/XuRe5G7ETpJuU3OlOHHUxXBTWc8035iBlkF9LHoDlFfLTS1UqwFJJAicoAYJE+hirBv3QO8xfeKabW4xgDJj3GrWHT9TfjzP+MCjD6rSmFI6esyYTz/4KDY+rmv3boqiSJLkdDgeXHxfU0Njdp/efiWEAAAXBC1Qnbf1RGJs1NrN537LpS+x9VFKEPDKkZk52RGKNjkycQgiAtCAouVnNq0tLV6PRxAEALjuxhucbfamxkZ1hQVBYIzl5PTtM3T2R5+fDA8zMMaIyoQJAFCnw/Po/AEHBhm+d7eGC6JCgBCiNLZKJr35nhtr3nv0lzmjd8Va3aHWPt2zJo4ec+XYsUwnKYyJQAiAgMT/A0CRSIS0yb6Y1NQZI0dPGzO2T/csZ4hlV6x52/Vj6j54xLToelGvY40tSIAQohGEh+W63guyJg2Ib7a5RDFIyyhJ1O6Qv1xV8+CTzwIA56hOJDE5adnrr9674K7ysnKNRrPmu+/HDBm+fcvWt19/o662VhAEzjkgAFBEHp6Yw8XUgb3CrxiZCb/xMV4CNOdAgNx6bV+FYVTqFSQQqEUAEPziasasmaJGmnbFpNKLJQDwyfsfdu/ZIyIyMiglVLPAY4/fW92kXbXxQniYUVEYIUTV0zgiyr5H7sn5vjvZ53Nb3TLzekMWXFP93qMbB3c5L2J2RubsiROHDxmcmJwEANGxsa2RIT4mB6ykgETVMAkSlAitV7z6tBQAIKIYn5Q4fOiQWZMmdU9LP0v4D0O7133wuPWOa7nHZ2HseV9T+I1p14/p1NjqFkRBlQiISAnoNNrn39438coBvXpnKQojlACCiuPk6dM+XfFlYX7+7Gkz5t1wk8ftPlOU37NX9jOPPwEBA2xA3AqRnScojM+7ti8h9DI2TTuSMwCOG57Rp2sI6lLDYrOx3S4MiCiIQlVFpd3h3Lj5Z0EQhvUf2C258/EjR1579612wUoAAIGQusKNDy5I232waseBynCrXlYYIYBIKCVehRtEuP+BQW9GtJb36Cx8/sL6UT3zfJ7R/QdMnzgxqVMqEKpaKYFjlMXKkuOcPplSAkACKodfp9AAqaQ8LjMjOAvGGKE0Ja3zjMmTh/fuc8bjWD822/zVy5+FapsnhCyYmdlkcwmCQBBVAYGIZrPupXcPd4+NGjfcV3bmW1EUANUweZWrsPFXXvHCU89UlVWUNtQmJCZ+9sFHb334/paftxw9fCRA1AiEIvLQmF6gS+3dNWTcsLTLiLodaHVtrr+qJ+c8MmlUx0OZqmw8/dgT3Tulf/X55wlJieu3/Pjzru3vfPLhtn17UlJTOaLfZs85IbS5bE9V2TaLD163h2x488TBgqZQs1ZRuDo3QaAur5IYqp27uN8TEb7tintAl64zpk6OjIlR8SXUH9vIOBMBDBmpDcwnXbr5gKgWB16jF5PS0yBg4w9aVDhj0fFxM6dPG5rV45XTJ/b1JEtu7Wt3eP0uAX9cJIaadW+sPBu3tfHhC8RTzVtqdzaW7SFUUMklGM7x0OOP+RTZYrU8s2zpm6+/Ift82/bsyuzaFVQ/AwnuNxKeNAqR33BVtsqCLgeaEoKIfXsk5mRFME1cSEzvII2qPOGH9RvWfrfql7277l58DwAsuGWez+sbO2G8zmBQFXhEQOSECs7WkqqC1VqNQXyrKD7f/TKP/GrZkTNl9hCjRlb8KoYoUJvdM6h3YnZCfdWFwtT0NJ/PBwCCIHT0jKhXWJf0WsI0qp0zuPZACBBZUVoizCqTIYFLfU394Y0YERNXemL3HTMSIRDgqu54zjHUqn9v7Xntd+WPhcS4ztqs712URG1NwWpnaykhFNDv9GGMXTllUmp65/k339p/4IDv1q8xms3hUZF5ubler5d0CCNGwNCYXkyM698jok+PBBXYSymaAADMnJgladASO4hSAZH5GQEiAGz+8acx48cNGJSjfpMp7O3XXlepPRCwjEAIY76qs9+Ajlm+rzQdsbWZhWQUltosny47lF/jDDGKCuMq1oIoNNkcUydl5Z/b63J5NRpNAL8OMoQQAIjPSK/RBZ/RgesR4pC9SnxMdETUZV8MhkwCkF+2bE+Msqd1jnG5fepeRiSc8zCr4ZNNF+QVJc/po9t8MoZIuiOtlu9rUMeqzn7NFB+Bdv8cALyw7MWK0rKqysreffoUFxSO6J9zzbSrFtx2e8eHAmeUipbYwVoRrp7YMzgFP9BqvHtEmHlUTrwPzWGxfQNvtc+rb//+G9auvXA+T6fXA0BaRjqTFfVGfjsDcAKkvuBHl1JiOOkxrq3mFknkYOMsQ9Q8V2/+cNmhwnq3xaBRZaNq7tfrJIterqqqBX9MeZBZQXCGsUkJjSF6xhgAISpNIwCARGij4pM6JeoB/HZ6vMTSoP5SXlaSmmj2+RRVCKkOqjCr/h8/5Nk/v/iCNsbJGBIgDIlZNKyrNpz0uZTShsIf1f0M4A99T+nUaeveXe+8/uary146ffKUTqcrrq3MP5+3Yc1avyEQQHWGhMX19YJxZE5cZJiZc06CQFNCAWDskPTocEln7a7VhSBXCBAgfo0NAObOu3XEmNFDeve78+bb7l94z0fvf7DgnkUQlEvICRFctpLGqh0aj8a8vISA35QqEmJjvJtW+2SF9uMn9xTX2END9IypbjgUJdFiYpUV5UFcVEpUuTlnHBCTEhJ5pyS3zwcEOEH/DyAFqCU8vldPAGDo9wcGRVyQwOtqSqMjjbLCEYExpJSGWrRf/FjoWlG+FMPcyDkiRYKInAAFYl5erPFo6qt2Om2lhAgA/qw5jUbDOd/68+a+/fqlpKb4fD5KaVpG+vGjxwAAuer6IYhco7NqrVnR4dLoIZ0BQPXmUADgyAFgwvDOHElIbD9QV4ZconKIVPjy25XLv/3a1mYrvViy/OsVQ0cOV835QQqqzd/EtYppfa2mxI16SniAI1Pa6vH0iAh/8IGnl753fv/BEpNRsFr0RpMWEWOjtccOHwkKA/UrTGGEEEEUALG6pDTfbWcUwgStjop6KuoFUU9Fo6ipBd/p/PzaqhpBEFT+roYwqCQmimJTs72+qigm2oKAFovWYtEw2fvB8pNnC60PfvauVytwWaGU+O0rHLhe0JS4TevrUavU5W9o56oBh1ZCUmJrc0tWdk+v23Pm1OmqispRY8f40ezA80Ji+yKn40ekBQlINS5CYlz4hk+uMofEpQ58TBQ1fiOP35WBQZYXcJ1d8isAEkJttSdLcz/S1WD4I7kCBx44WKvP4A6n8PHTmw3Yv3PXlV992VxzIi4SkxP03TPjzCbte8tPDL3i/hlXT1MURcWaUtpQV//1lyt+WLe+uak5oVPKwIKa4Q1eExUJAEdkBEvQsysrsTLEVF5QEBUTM/2qGdfNvTE8MkL1XAuCoDB8ZPGi3p1rRg9Lv1BYlV/cUl2vNNoMY6fMHTl8yPo9u2ZznW/+M9RqRv8GRwRCEJBi07Lurnia2n2BNTobkQMQ9Z4/bfrhoXvv69u//749e389eliv11tCrKIoYof8BEKAKb6iwy86bDUz5q2tqGkmBERKCEMc3D8p1CKIli6iqEHOgQbFe3uuDgCoQKik3p61AAQBG0u3EZGY1lUJDs7NAnD/XqCSKNc3WR6dv8kkZMXEpnfr8tTSpQ31LefOncs7e/rTb7bcMjt+0bw+r33wpjUsbPSYYQDQ0tLy6osvbVi9NiOzy+133zV2/LjI6Kj9x48f3bnT19jiX3+tFNo55ckrJyZERdXW1m7fsvX7ld989N77V8+59v6HH7RYrQDw/JNPdIm9OPWKvqs2ns2rjMkZPmPwlG4ZmWk6rUAI7ZOU+ktL47TFN7a8tlyMCkdZ8UsOAaidGzfUeO+Jb7z4iyU6W8VBoALnfNLUKVxh69as+ezrFfGJCcFjWlClQCDImSBq9dYuWl43uH/q95ua/aEmnOO7L0ydODwxNP2O0JgeiLzdrtvxQsCAS0M1G6tZIYTQtvqzJefeN5aw0CdyCaWqeRIJEEqZ3WUa0OPkE7c2t7VNnjxZURRKqepho5SePHH2kzfvX3hzhiQK73yWO/+B96rKi+5feG+fvn0eeebJHj17dpRuHZf8d/fZqRMnX3j6mQu559/68L28s3m85eebr8/ZuPlUUX3mM8teodS/i1UjnCAIG9ZviI0Iz3r6Y9fJC4JRj5z784mQALLGpd3dKWJq1l2WqB4qUascqWMaEnbISuoQrIOE0Oa6s60FH23eU73wyQ2UEgERzCb9/bf0N1oiIjtPEUStSvzkdxxHQFB9hwTMsQSAE0Jr89Z5lJqQ7xo0FxyoE4gagwQEAASOjhfuOdxcN2vyFCJQGoghUkPC4hPiImK7ffXlmv49Qvv1inrl5Y+/X7Xz/U/fu+/hh6KiolQmEExMU89gwQiajnNWbQ4xcbHXXDcnIzPzjlvm52S5bpjda8eeC+crUp9c+ooggMr329VtQjqnJG8/fChl8ADxh10oafw+B5WonQwA3AON6JZD4vqrqTeq18c/EjWuKkAB7WeWALcUJGNz9RGTlq35ucDrkwUAyO6aMHdGpmhKi0gcishULfv3TNfEf/71596o5Cx47NXV5Zt09cy8ooIIAqGAlAIlRJJYc4vp5qu2pUX2zegaFRfbURkghFBRZIqSlJxgicz8ZeuOvj1CenYNpZroKbNu1es1jDFB1chU9YhSVdxRSgmlhLavmV81IsCYQqlQkF/cLbn+2hldjx4vPVeR9Mhzr2klgghUoJfl0IkajaTwU+62HhqD68gZwWJCBBAIEAKSQOs9voHhbqnNGpEtaS2qqgcdkvICWvLvpgOgKGpt9fkGsXnv0arqOhsFgOxu0Rot0VlTVP7QUdQGrdtqQFZQhgYHCwAtVQcZa5C2lsHFBnTYsMUGLTZobeN1DVqrqXhMX5TlzB7dmV/Q+W+oHtDUSLPs7Mwft1V+9PkJq1ka0bvttafvbGpsFUXRPydKVdphjJFguMFlY+McEUVR2vzjD0e2Lh03JCTvQs1n35ScPFOhlTrkMvr/9zMcznmP3r08LmfxFQO0Ri3WN4GtDVps0GJDexstbdEetHHR01pzIiApgXS8DyJjzM9ALyNMRADQWVO1EmR3iwXV8J+VEYUo6q2dAxj4KY9zYKjeECgh1O8LIYE4EuBAgQOnekv4qKhMm7DA6UYepEBwOqWc3q3R0YNiogGAUAGBMO63O6nD4RwkEVZ/v2HqVTMHDR209eA6g64zFau3bP7x+htvqCivraurReRWa1hSSoJeJzHGKBUIAcYBA2MTAmFmDofr+NFjGdlXHC6gbS6yYsPHj95/z41XX/fVmu85R4UFzHV+i4PfkTuk78CapubkJ++Rj56lRj2oBgrODVVN4vnK1tF2h74AYBJHChwAAmoCAqUggKgyNEIvTV4nBAAMISmtdVJWRhQAEFGU1n0yu3tGfFyfR3X6kKB4KSws/PyDF2MijLLCBYFU1noWPfhMcnJiMHztp02bDu1eExFuBSJ6PD4wJ4WGhzbWnjEajf5QEgIoc9Enc0QCvLDUYTQI8dEGWblEUiPnkkZjtZgultUPHDV74sRxAFBWWrFm5cfgKbAYGSXE7aU2l3nQ2BtGjx0FAKdPnVr1xRvRUVZF4QSwqkFZ/OBTiUkJ33/zdcn5fUazBRnzyj6ijXngkcdvuva6oSNGNNeel0QfcipJtKq6dcKMW0aPGQ0AdbV1H7z5fKSV+jQSEWkgagEJ0Uhg6W5ITOtejXphxzFTRdF+s9kSjJIhBEAwJab2vmLKNJNJ3yFsrD0N3eNurTqxLC+/evod34mxUeboMC1KoVqdpeMuaG6yJYU1jB9mbG3zRUaYHnlm57atO+fNvyl4pmyur8np6khPM3s8DgC+5JmvM7p0uW2mUavxtlutCCAhnGNYqOGBZ051zQifPiqrucV7aSA3YcxptbDakgvff/31xInjiopKl7/9yITBNDEpLsjIPG7Pus0vtTa3XjV7RkNdQ3pM0/DBFlubNyzMeM/D2w4fvDIxKaGlvqpvWmNCAjDOHA55yTPbb7h5/ufffLX8k886hZf3zo5zOHwWi3b3vroVn32uAt1md1mEiisHxzkcrg5GTWSILk/FvnNHinHM9TN7N/+0dmx/2WpVWHv0F8pK04XCb15/4deFD70YHma9jHsgoqSzgBQaFd4cF2WhKQmhZgMVtJHBGGf1EgRBozEQUUNFDaGSwWiSRDEIHwBIGo0o6YmgpZKOinqT1aozm6lWT7R6otVT9UejFyQdlbRE0OiNZq3OQAQNlbRU7PijoZJO0Oj0BrPZZAaArz95ZfIIbVJSrN0hO5yywynbHTInmhtmdtu85vXiolJLiEWQtETUElELgmQ0myVJAwCSVitqdVTSUVEnavTWkBBUI6SYOzLCxEEjaLQyE9PTEp32Rq9XBgBKqFavI5KWanQ0OGytQdIZw8LDbpiYcuHQ98cvaCKjooBIVNSS9mHrtDr9iKGZ/TPqX3r6YcaDoWrB0BIuECpqI0xGSE4IpSkJoZJINYaoIL/vsCRqlRcE8EubS1eMI3IA9TP+/BV/9C1ecvl/5QzVoPHffEaNm1EUxWg0Hvh1f5y1NCEhos3uFgWgBCgBQSCMKQzJ2KERyz/5gKjGRf/dgHOuqvfI/XcGREDOOFMNNbaWMotFoygKAZQVJTxUr3ibq6pqAPxp6P6gU/QH+atDkmXF4eYTRiV8s/wjt0dW1cjA4LkapNnQaO+d3ckEeV8t/wqAcObnmUD8rFw0xEiikJIYSpPiLECJpI8I4Pcvyc7wr00gslxN9enILYBfmpPCGCcAdqf37PFfeveIdDhlUVTLAfnXXKDU6fL27JZQV34q91y+Xq//o5igjrQgiqLD6eGeJpNJyzgSApyh0agx61lx0UUAQI5B1xAGyjypIZSUEq/Xl5IUYW+5ePrkWYPR4D+kADJ/9RoURWprc48bmbZ982qfzARRAL+t3D82jT6CEJIca6GxURYAQdJZ/Rye/EuSBQghYLFow0INYaGGsBBDeJhBr5OCyCCiViOEhhhCQ4yBH0NUVGhhfqEWK0NDzApjiCAJVKfXaDSSKAgqtRmMmqgQPHzgiN6g539VWwMRJY1UV1OvE52SpAmGYwuCEBulKbhwATqoZRiw+MoyFwSqum4RQaMVwq2Qe/a8Vqvh3H8+NBslvU5So5d9PiU+LkSDdYcP+E1j/iAfQgBAowtBQmKjTGJEmA5BFDWWdlr8XxMzpejxkBXfn61vaFKdL1qduP9QRcb1/dSTnUEvHT5Rv3lHoaoxIaIkCVVVbSUVvtjIGOQEgIuCYLPLz7+2U6/XPrhogMkg+mROgHfPDP9s1dnJg1P/cqSqZl1VWWYxYofkF8I4S0mwFBUWQECtBgDO0WzUbNlZ8cX3uSkJoQtv6x4Zofd6GQAJteo8Hg8JKOOKgrsPVkWEiJkZkR4PAwBKaWqS4dCBg8NGDLpsn0kaM6AUEa4XQ8waJJIoGfyU+L+nZkRBEFxu1/b9dbctWGw06pnCtFpNp+wag7yfMY4AOp3m1NkKWeo29+Y5tlYbFQTOuc6gP7Rro1nPGRJAMBh0S9/YZ4ruvfiBJXt/XDZnWoKJUbdXKa9oOX/utKwk/mV+NgIA0Lrq0vAQ0S+sEAgB2ccSE0N/PV0CHY7RgCBppIrK+pHjZ86ac82+H56cPiFVxVGjoQHXDEgiaW7xvPtZXvceWTOxpXuXULdLVhTWKcm650wuXHJMJABAJQMSMcSkFQ0GEUESBa3/cf8KFo2AyDE2NvTm2643GPRqWHF+/sUdqw+qTyCEyIrcu1/PSVOvVBRFEATVEFNzcb9e18gYaCRa22DPLbCvWPtQVo+eOzaG/7rv4u6DlQePVUUlZE67aobsc/6ONebSixLwyUpLfXlcgk5RWAAFlGUeG2112iucLrcktTM0QBAoCYmwdsnM2LM+aJuES1gUIbKiJCZGvf7+J1+8c1+XTjKhVFZYdJS1qb5aDQi5VHnTIJEMRkHUaQCoSATpXwBwx/FQamtx7t6512Q2yj7ZajVRUes/VRLik5XkxMjcc79+9Ibd7fZQShFZi0MrsUqjwer2Mb1OczG3Ljw2uVv37gCQ3mPoGy+/Nnr8pOUPzejbr++eXXvLT771l1nwgiC02RweR43VrGMMOUJ1jScpTqcwHmLVa6irrLQsLDQ8iAsh4PXKaFdOHD9hMTE13p4AOhzejpKcEOLxeMMjLObwlNaWwpCwEMa41aLzue02W1toqPWSxaYiAVGnIaJGFCgRKPHHhv3vZSEhwBSwmKXFt2c2XvikAcFklNbuuYjmwcN6WRljAiVOp/eK0Z1GD/W6PaWUUM7RZNTefv/Wvr0SDcaBTo9TFGlNTVtSckpdbd25s7lR0XFPPvd8UnKiT5YPHzpSerFEG8g7+qMLEUVJamhooNCm1Vl9Pi4rePx0dXJ8Z45cqxUjQoXC/KKhw2MD+Rbg9si9s5OPnD2Qf/BsTt94l1smFBBpdZ3zUv8JIBKBgskSYXflhkdSWVb0epFztwr0JbYzKgIRJFEQCSVBEfmvomYELlChd1YEpZQxHhpqKK+0/XqmXqBmCCTAMMZEUWO16ABQBTokJMRi1qoaLSGktc0dG5f045qv3HVboqKjEOBkvlcQqcvN3vzk1HOPDP1LoCVJrK6qMuq8VKCEotej5F5onDqhEyWAiIlxpsILF4aNHB4gPeLxyH2zowf0iQJArxc5okiJ3ektq3SmpaX6VM9Ah0tvMHtdTHVtSxqBAHc6nJdjAQCECATEf09SM0FAl1sBAMa4KIkeH5M00mXAICJjiv8F54xxSZQCJdioz+cz6Q0hIYa+qckRkRGyohAgokhsdvmtT05yxv9cGCIiFaSaytIoK+UMRIHaHd6LpTaPVzEaRFnmyQkhhwqKvV7Zn5IDQAnx+vwVTdWYPKtFu3t/mUytfQf0cbpqTSZTx0cIosRVj76a2Ync6/XBby15AABEDV5G+Evl/5++Aqc+CJy5LjckAnKuPlk9UapuoPa3gUiSxBh3OH0Op8/pktUXDqevg539j5cagHForC0ND9HICgoCaW5TqupabDavKFKfT0mItzY3VLW22ERRaLcOk/YziyhQj4++/dGBq6+5NjIyUvbJlz2VAAUUg6NFAM4vz4NTp64gp7KMgIyj0mGE/wKUCSFmszY01BAaYggLNZhMOpVwIFAWUJSo0aQzGrUmg9Zk1JqMWlEQmMKCnndJEhhvz6qkBFR3Av3dPJHf/IEK1O3yOFqqQqx6RWGSJJSVNYZHp9mchBKUZRYRYUa5tbqqRiOpzmhV76ZqfTBA0Gg1T7+0Oy6l3+L777K1tf02y55zhdD2QBTE33EBIFcAmCxz0evjiApnshDQ8P4lKMsK/rKrrKnZhpwbTbq9+4qIsQ+ADgAYR7NJs2tf5YafCjQaqpK6RhLO5dX06B4W8MWBXi+5XW4q6KxmvdmktTvdTGk3xfhNNxi0bvtzQ4OwC6LY2mzjviaDsVNbm49xQIDEWI3b7QNiYhzNFtFkUAoLL+p1GnW/SSKtb/AYDJJBTxWGggC9e4RposYAgCLLvxVjsuzTimruDOEcOUNJlDoOA1QaR+b1EdHuliNB5swLYPp92gjQoeph4YwBAUEQ8Q9y6hBBEEhLm++DFeeHj7pCr9M02zC9V1ZCUqrbdZhSCyBqtVJefk1s2rCFi+9sbm4VKBUEOt8tH939sdfjowJhHMOs+sLGtoZGUnGuICIqKiMtwmrWBHmRovgD1ggQQfBzHIX52lU+IjgcjtAQEKlAKHE4fVMnpE8cI1MqeL2cUqBUiIvSFeYX9EkT1fOq0ajZvr7QZvc+sKBvc6vL7fJNnZDx3BtrW+bdodNpL3UTAwC4nK0RRhE5UEJkhckM9Qadf88GgWZegj6XSxZb22SCsiK7tXq4zHx3GX6UCgBABUF9DBUo/HFmLldYfFzkS68vMxr9B5a8C8U7V++mNEQdiCBg1y5p2b16qAcWQkBh5PTBbz1en0A1sswS4iyHL1ROnzn13TdOuE6zqXLL2GEJLo9MCGEcPW5ZDYkgFCxmjcNhBwCnvUWfpGEMKSE+r4KAKYkWhTFK/Bq8KIrBMp2c8eQE64a9Bb06WYNlTnVa8YethQvm9hAFIis8LMyQEs83/7TNZDL6LXMAACCKgk9GW1OlNVanME4pcTp9HEWTuaO0RACiyC4CPpvdKzY2uwAU2Wv/Y1ZAAFHUSGdOnf51d3xriw0I6vT687m5I3pq/iixX52JIsuIOn/CaUBQqMnvHo/S2uoGAIfDJ4oC49xk0ptDEx2O/NAwndcrd+4U5Vp3Ijou4fsNa7dv21N6/B0MaqGEttplVSIyzrulh1wsKnK6mau1NDQ0wu1hOh212X0aSYiLMckyV7PpgjmihCASIstKUmJIXVWu05khUB0AQwBRIFSwVNa6k+J1jDHZx3plRe/7dXu/3glB/ss498lk/75j6CkLDY12upheJ7a0egjVWa0WuNRZq/jsBFl9s0esbmwjwBRPq5+9/oaiBUrsDu+Ns3vV1pVXn31X/YCDk4N7c8f2G6Zq+390UUEIRu8FhSElxOP29cpOyi089O6Ld8kyU5/idLN9B4vS56eoLkGjRpgwInzVii969Rtwcu/yKWOj3G5ZEChjislkdskiY4xS4nB4RwxLXfdL7mtPLxzSS4MoAMiiSGsbHGaTNjxUJysKAOHtag+qLmyfzGKiTLK7pbnJJkpRiDIlRJG96V171jVBcjwCgMerdE6J2LjrYnW12D1OUo3qVpMuu4v26LaXRg+J9MkAAJJEK8tbTCERBoM+EFLjL8vsc7cCQk2DXayosiNHr7shQOyXA00IMI4RYZrY6BjiN7QiEnHd5vK/VGY7ao3Bz1FK3B556IC44QPQ5/MRQjmiXicWljg//KSgrCY2OdHi9YHD6Ruak1JYVNRSfGrmlfFAqKJwUQRZVsLCQ5GEuD0ypRQRJFGcfWWEx+s1GUO8sgwAoigWXWyJitQbDILNplCKWo2gN2jUiAmnwyMrnHM0m6SYGIMvoLcRQr1eb1Jqiod53O4mKugVhYWHG40a17kzeVOHdUZEjmA0aO66pSsg8/iQMa4+7tT5mvQuowFAjRwLSjqfuxGRV1S1iaUVrbICsrtRBRV/TxgSQhSFy3I78SIwxtifnCcRURTF3NzcPn17S9IlhhT/0cCrWnk0qo7NUfT5lK7dezS16WWfl4BAKfF4lPS0CFGIcrp8oIbzcRQEajYbzOEpDQ0XYmPDZVlhHACITmfw+hillAFHjqfP1Wd0DqcEOKJWEgpLbCdOVHCUOSMjhqXFxRm9HkUUaEpiCOftljRFVsLiQ8wRxoaG0oREk8fLBIF2SjJu2logiV18sgIAHNHhZEAoJWqYEro97OTZ5oefGw4BlSMQxgWyu15WeElFMy2vtDlcjHlrOeIf2sMQiFochvr7EfzlgYFzbjAZd23fkZ+XR4JG3w7rQKharUgNPwBCweeTY2MiIuIGFJW26PUazpFS8Hhkh9MLfkMwM5sNu/aVO1wsZ9iEvEKnVkNZIIifc0YpcESNRqiqdZ8935iZFqowjogGvXbdD/n7zpn18VNqfL1O5DZrNZQj4chTEi1UaCcvJETgcmJ8elWdT5IIAfDJrGt6qMkoMdZ+qKGUChQJIQrjJqN09GSNSzaNHjsCVB3BzxsoR8689Q4XK61qpTX1rfVNHiLbZI/tUgolHJFxZAxZsMwoQ85RdU0hAOfIGA/+igB+rxVHxpFSIcRi2bh2fXB8iMgYcoaMo1rojDNUa2uqwc0+r2vspJnHzsoCUQAJ5/6jGiLKMgsPMxw6Ufv+8pOPPPHIoMH9G52xzc1tkiQpAX0AEWSZmU3ajZsL3V4lOSHU41EA0SvzuobWxUvueujRh5a9upSIVrfbBwA+H4uLNmk0gspJGOMgit7GxgQ3NLh0TPFxDh6PHBtliokye7xq7VpUg7sZA0XhkkAkUffhZwdnXnut0WRSlPaeJIQQ2dNG5Na6Zk9tfZsoK0pRRVtWRpjbXqvVh3RMEDIZteGhRkny0nbvhErdyEHUaaUQiy4sVC/LHBE1kihSGhailyStIBCfF93OimlXz7pn/vzampqY2FjOuNGgDQ8zSpKv3cLpFxto0GtCQvQ+X2t8fET20Llrf/pozlXdvV7u8zEEFEViMZoPHKte9NDGZ158ZfS4sQAwcdYdm1Y+esvsLlxv8Hl9nAMhGBlh3nuwcsOWi9ddNykhTm82a00mRE7cPik+IQ4AjEYj1VgNOjCbtZJIM9PDCBUsJh0ACQ81mE16b5sSW9kgY7gkkIhwHUceHiYN7BunN0kWvaZDRQ4kVHB52MPPbVak2PsfWgwAqtgPMEjidtQQcBWX2xVFEQHgXH79jDEJLltJSFRmsBSaJNIdewuqqxu8XtaR0NUSAgCkoKBizUYxxKpjjDPOy6saLGFRK74t1Gp1AiXNLY6qmrZIpzunf/9PPvz4qeeeEQWy/2BxU0OtT+bBoC410YhQotWIF0sa7S4LAEyfOf0bp/2Vdz4aPjg+PtZCgNY3urfuOLThl5Inl750x913KIpCCenbP7ux4d5X3l86sJc1OTFMZxDdbr5q/fkPvjjy/CtvNlTkff39rxarlRJoaXU1NLkTkxIAQKelClo+Wr4lLDyMMcXrZS02VlleIyvcYtbv2ZuX3TNNvFhhDo17/4sNUWEhssIEESqqXI0NLTptMHuQEAq1dc5fD1SExXf9bu2ner3BH0MD7ZUwnLZSikruhTpQQ8JOn6/zylxpu+i/AyEA0CM7q9fQWwsuFGi12svSmlWYrpg20OdT6rxIgChMnj4rPGfwoE0/baFMAI5M4529qIttzea5PfrN/fyDksKijMz03sNuuJBXoNPpOCIBYJzpdDpZRmebR6OVmNE+cXJnAJBl+bq5NyYkp6384tPq8gsel8/HhE5pPTZt/bBPv76BAw5hjE2YOD4yOnrFP/6xYVe+y2FzuZkpJPofK7+dNGXy+jXrt/7kcjitPp+s1Qh3LEqwWMyqpXjqrLkfvuuu9whIQKuXBOKuAx2C0uyg6X27jJg41vvKNxOmDP0sdkptcysIBGRiiAIHR7vPH3RJABC5IUa/9O0h464YIwjiJZFKqscMwGO7yGQ8db7OD5rJqPv58znRcVEp/R7XBNp0BPjMn0m8YCxwW/V2pzNX831dyFEHN1LCAQAUSm0HT0WMHvjliG6//rz58+++6VjBRR1ZdXXdz2s/iAkXi4qr9WFZWT2zOWfDRowIRlU5HC6Px2MxmzRaDQbq1HcYACeEEkIUmbXabJIoWK0WIGTXjp2iKJw5cZJ7CpOTohpahMlX3xkdHaFWHAqGNlNKn3v8ySumTR6w7YTvyGlq1BMODpfLdzJP4+Piw2Nd08N12q7m+LHB+OjLpk8CjS5oh9g79YXP6yw/srSmtmbird85HB6BUuL1KX17JmcmaQVjmt4UrWIHAMGi7X9YrBIROQNBcLa2lBdsYM4W/OSop6jcU1jmLizz5ZeIFJwnzufcNPubMyeUNnt23z5er5cSosiyKEmlJdUfvrp4dB+XWdN09HTbjbcv6Z7V7Xzu+SMHD8XExJjMJkTUaCSj0UAFKvt8FIgaOKFGECPnavETRVFESTAY9Dq9rqq6ev2atUajcdTYMVGx8bs2rx6W7QnTNXy1cmvX7OEWi4lzphYpkjSaT955b8/p03fFdm68+1lfbYMnv9RVWAJlNVQSOWfVI5UGUmuNHKk1x3FFRoTfmT6iGuzqRxlVpysSQmxN+d6m/fuP12/YmkspEdRwALPZOG5IrA+NIVFZQXlI/9YlEACDNc7dWOyJ9GhbiK5MBqte0GioXotqHYmTeQOXPvLgk0+PGjUyOiaaMabRaGpqm9575YGrxxuNZsPKjS3z7n8jOSVeYaxLly5h4WG7d+4qLioymy1Wqz+mTRRFhRA7UzyceRE5JZIa8OwPjqYV5eU7tm0vKbo4euzYXn16K4oSFhYal9r3q683jciJjYuQV6zc1nvAKKNRryiKVqs9d+r0088+t/yVV7QPvAocBaOeajVUpwW9ltoV98gIx4xoi6F7XLeZBJBS4Xcn7z/uBgzkgUpznBBaX7qTeEo+X5N3Lr/GH0+NCIlxYRs+mWkKiek08DFR1KE/FvgvbdP+TUgItdWeLj3/ga4Kwx/NFTjh/gJ3SERBaWiKmD9n1ajuH77w8pY9O/VGQ2OTbdmTi6ePhKR463srim+867We2ZmBQpBMrSx6sbj49MlTHq83PjYuOa3zxrVrKrf/qrN71Ix4LhElMXbsLXO7p6flnsttqK/X6/XZvXunpKaoqYRUENQbHj16as1njy26tVt+Ue0vh3SPvvBWiNXUZrNNGD764WXPTt10pGHFOikiHBXFH1aOgBSalnV1x9HU7ndZYrJ/l2/8MS/1JwsVH37R0Vo3ff7qiupmQkC1QhCb3Z3TJzU1lorGdJ0xMtg946/uTILVD3TmWFfDRbepSXAL2pMtoAskKnEumE1te47kTBhTnBD+6auvT5ox89lH7xnb39stM+adz3Knz322/4BspjBBFIIJKYgYGhbWtXu3lJRkDuTFhx7N+GjtTfVscKM7p8GV0+AaWOvqfr7sqzWrKyOt/fv07tu/f8/sbGuIn/zV/GRKqaIoiYlxkj5p5TffT7syk/hqv1l1cPCI0ddOmTbm2lnzfbq6pR9qoyJQ8WcKERGIXXHOiLOPMJkN3WK6TEMM2CX+rlsVCaFtjfmehj1HzzSsWHtCJWUavMPWPcWUQEvNkYAa+LeiljouRkyXaeATHTOi5VQDeDjQQEEjxrQRobWLnn1h4IjE7lkj+2RPGMB694h786NjY656cMiwAYqiCIHqGRgowYuIjDGzxZKcmZ7q8F5jjtUa9KiVUCuBVgKdplNI5NWyNtJiTu/SRafTqQmdl5YxRFEUFUUZOXbYoPH3vvnRoZwByUN62Ib0zMoaOuTxbr1r712qjQzngYoiQIG4uZyqc0yPoV4xJmOaH4p/3nPdWnOMEr5lb3EQIgr+QD/YcaCotol5bed9nlbijz7AvwW2vzYiM1hTIuLHeHVex62pAJz4g/0IQWSEaLXatgXP6Bub7r4jK6dP3IrVRUMnLrli4thANcr2+rB+4goomnUNDbS6nlPqY0wdkRrf6uCykdPGoovqnvJD3CF1pyPW06+a3GfEopXrikYOSrjr9p6a6hrH3S9oDEam1rcCf/wnB26/rZNX7wlPGGMISUFkBMjfxDrAN6jPY/PYcuualJ37i4PwBhzAlDQ2OfYcKtcQe3PNUQi+/zdciIEYd4qA0RmTjGKyo7fGMTMe7AoKalkxQpHrtbpn2iqjUqqvuiLznZWnvlqTP3BQP3U1VdPiJUn1gfxKAKiurg5tdmjVaKbAOwQIQ4ygoru0CgJtDi5jdh3VLwAYOKjvpyvOfbzq3LVTupqiy16wVxl1WsK5vxavQKhddl4V7+ilNYgp0emTAECtvvM3ZBUEtA4OAM01x3Rg332wqqHJLlC/V7E98gwAVv98VvHRturDnCuECsFV+htY+1NwBUET3+NG4hbs18R6B1pom0wECoBmKjwt14XNT7v9mv7vf37E2Nh58eMPDR8w+OcNm0RJBAC/lYBc8kT1dXVpWZjbhx3UZ3XmDNEsSlBRY1NkuLSfRPAm6m1FUVz73aqxw0Y89PyT/GLsZ98eu3tujnRrp6WehhBBQkAuEmKX3QND7dfGCm4a3+M6QdD423f9nfkHH0oo50pr9SGvQtdsPtdxJP7xqUe1E2crj5xroEqVrfa0StSX1ab9E6gRkRCKnBlDUmK7zJZll+2eNE+KBhxKqEZ63tMA1yXdN7P7pz+ed3xbs2Dzydsd5MOvlj/yxBML5t5qa21VuYfaHCA4PtWoVldSFqMQFsiYDj6PI+pESVfXXN/YCMHwhsDX1VuJotjc2HTL7OueX7Zs+fcrb2nwLdyeW7Oi8uut+Q/N6Wm/Ou4lT12YRkPszJuss9/TSZbdMV1mGUM6IVeIWirwn+DPSAhpqT0tKpVHzjYcP1uhAnsJ0BBIwv9q3TlCaUP5jg7Fh//W5WcghCLyiOQREXHj3Aaf/cGu+kTDUltdy8y4x2/q/dWuktJ3cx+FMC8hNQ+8OvTTjbu+XsnDLEP75Xz45tuyLIuiqJ6t/cctQgDAVnwxioiy3+/dwRoFQEXBanPWV1UF10YtoEsIEUXR5/W+/dIrQ/sPMibH7/5yxYA3v6957A1FhCeUsNPvnF17oOyp2/uVT456pa3OkKRvfaiLW++NjBsXkTwKkQER/OX4/h7f8K8+QFP5Tkro1+vOwh+V+lHNJb/svXDqfCt6SlpqzxBC4e8j7a8gSVTqjs+abbH0ghR4vZ9QcUXEc3f123ik6uhbZ55m4QwZA9TFRto27oSrFn3cb9QHn320ftsvQ/r0f/+1N22trYIg+M/ZiB4Ab1l1qKhRkMNl8TWASGiEW64pK4NAFqKa99nc1PzWS68M7j1gy4EDn3/5j/e6D2DTFtq2/qqLjZQRKMDz7rBdr53afqr6+cU5+SMt7w3UCMlgsfSJ7T5b1Zr/2uLeAWV/uRJCWmpPoqf4ZJ5t294C+N1SP/5fKAHAz747KQlCw8WfMLBz/ianVmPm/bHdHDv3v9Ph7bL1TOnSR4YfOF2/ZdnRF+QwgYCMQIFwWRbDrODy1t32SM6rK39e9NDTL77w8769w3OG3Dn3lh1btrqcTiqKrQ47qWkwixqm2lWCTwICAAqBKIXWXywDAFEQnHbHLz/9fPv1c0cNHrb96LGlry376Y57e734Rd0dT4NXFkMtKCsCEA9wnUCec4euWXr0bEHT0kdGbTpe5MWsTgPmB4KKaaC85N/FGoAisobiraIgffbdcQR+WRui33gIgSDgynfn9M+yhHS6MTJpSLCU8d88Gql34JwJgrhw/t09kspbW+WD55qeqzdklMh2ExX4JfUbiSDIbQ5Q5JBxQ4Ubpx23SKt379y7a7dic/TsmhmampK8bvsCp95GuYCAl6oVAhFsHtd7QzvFjxh0cOeeotJSrdU6fMyI2cNHZ7e42ZfrW3ceIhqNYDYiY/6yFgiEAKNgcbKzydLzke4RfaM1GrjYnPHGu28wJlMqwl+a0zoOAkA9czeU72u9+NWxc7brFq36Lc+9/HZq4m5On5QvX58igylj8OOSxhi0pf3J3sEO1XlU1Xjps8vsVT8hMSoQds0UYyRoxbeKTUdawSxyAoQHzpWIIFAChLXZUZaNWZnGKaMd/bqe4d5DhRe2HjwwfF/u40JkDZPF38xQSwQvKDea2iyDB+T06DGkS9cs0JqOnHP9sMt5vgg1omgxqRnMgfK9/gpG1C47BoSwe9NrmPvbTW0mbZvPY4/PnH3fQ/d20Ov/vu5MFJ+z8MCLIrHddP9PB0+U/nXJTPVwVVHdkpIUnd1ZdHhYSGR3QH55Cu6lT2p/gaiWfvlu5erD2z+TZdJ1wHWPP7+McHejPZ+PjCGEiOfaKAPUUtVATggQDgic6rTUaJTrmxw79rONOxJzLw4F3dzrr/8BHbo9x7OMISKinhMtEh0SHYIOic7re5+3TH7zhSci0wacLI78Zqv70+/te44wj0ewmohGAs5JYJsCIUQg1IvImGN2guOuZDu4kzpfcfVtz5zLa6sqO1VRfIZqY7t17+pPOr+0cMUfUZhKzpUXNlJv7qZtlf/4/gill6MMf1A/GgHgXEHDtPE9wFOuC+2iNYSrFUov41yXFqnwiyNBEA78euDD1x5Dzsdfdd9td9ysKIo1qqekCW2rz3X3NfCMMKG4Taz1giSAQFR2EChKz4kkCiYjkSRfY4v92Dnvjzu73X7DiijpeG3FGR0e0uFhHT+sx8N6PK6HjfGGhIcXTN2b1/TMG96iCsXpoka9YDKAQIFxtTg6qgF6AiEciEOWk7Rt92W0jbcSL0noOieq8yRFkQcPzalrFPNO7zt++EB61z4JifH+oJ8/o+uAoY4K9ubixsLvbE5c/OzPdofndz/9+4W6BUra7G63B68YntRUXxKekEOIf+MGHxzkGExRBFFc+/3qB++9f9LUKQaD4R8ff/zrnr1Lnnp99pxZiiILggDIjSGp5ojurroSZ6TNNzIGBFEqslMHB0lANYUlqE9xRAAqCILFhIghe48PHzLYOGZIRP/ecQP7xg3sE9+/T0K/PjEDsof1zB6+9aTrhx1SdDTRagilaocFAu2lcEEgBAl1MNQS54w4292dXPHcQJOS+y6wRvdCztTKdv0G9KVS+KpvvwmNiB4ybGhLc4vb5VZzC4mqIf+GmFW3H3Kl5ORHJsm57IND+4+V/BOFugOAAiIsf3328L6hUuTYpG6zVO0SOsgxFWVRkjat3/DAonvDwsMsIdaNm38CIPkFhb169ezYGEQ1azHmbSj8ub5yO2qZvpQbN9ToDzQSf+l5CogEA014/UctigqjbQ6t2UjEQGQl+sWu4nHLCMRiIoyBv1i9vw+7mr5KFE7dnOvAPSTcOT3WnSxQrxiRODYq/UpB0Ab6T/lLqwiCcPrkmcxuXTjipDHjJk6Z/MAjDyuKIgoC/s7hHpBzQoWK82t8Ddt/Pd50y5I1f3Lw+Augk+JC1318rU7L4rPvConK7qiBBM2+G9eumz5r5s3X3fD5yq9uvf7G/Av5v+zdZTQag9GLHULe/N05XG3ltRfWtdkvCCJoi5lha532SLPUrKBEUUuBQrvdQ92gAgWGgPxyyqJUtZW0T0Q1xHMALyMyKmGid2C4a3yEp7OICpjN3WK7TNdbk/2RbMEMVwIEiOzzSRqNrdU2cfTY2Li4NT9uDPreOmgCajlcRM4IFVvrz1ad/sDjpVfd+W15VQv53djtP2EdAQZCW9vcNY2eaePSG6tzrbG9RY1JddP5vTiCsPzjT+++ff4Tjz1+YN9+QRCeWfqC2+Opr6vzerxx8fGMMdWnF1g8VbXkkjYkNCHHYEyW25pdJpt7oNGXE8GiDdTDSIuXOBmV/eY7EIJGHfQbjTr+qPxXrdyDQBUkHg5eDiLxZRidU+McN8XbR5nlENGkTYvvcl10lymiNgT87UFox/qP6nm95GLJrMlTvR5Pc0tLzpAhsXGxKrOGILNW2REioYLX3Vh6/H2TXnj0lZ1HTpX7I9j/CMw/ARoRKSX5xfUhFktOtqWx5mJYQk7HWj2EkA/feW/2nDkPPv5ot6ysZx9/cupVM3pkZU0eOz48MmLYiOFBy1l7+SFQyx0iAOhMMaEJgwzmVHT53Jo2VyZ1DQv19gvHeAPXEeJDcCuCixEPBxkpQ8KAMAAOlCFREBinMhIvVz8AhCjhotzd7J4Qbb82tm1qhLubBow6iykrPuOa6IwpOlMMBDhYcC+rLErlG+fOnD1+5EhYRPjKNatOHD321KOPT542NSo6qt0jjEGzBEGuFB173yy2LF9z/pNvDgt/1THrb6nlokC/fOuagT3MxJrTqdctagsndZSqpqGupNfna2ttHdpv4IhRI//x9Yp5N92Sk5Mzb8Edf97CSV0yj6PGVn2yremM21fNwU0ZEdtQqlfEaq9Y6xMaZLB5BScnHjXTGgglXEvQILAQDYvUKDEaHqf1RYmKBRSRiKjVa+Ms4T2tsf20pugA4wykaAf7e3TQTSmlc2Zd7XI4N275WVWlb77uht07dvy0Y3v3rO7+GNHAsAmhJac+R9uhQ2cdN937/b+ghVNwQFER5lUfzIkO46aEKQldpiJXgATsqAhqoXaPxzNm6HCDwbBt7+53XnvjtZdejoyM7DtwwDsffaDT6YKF2PxyHAIVBUA9W1MgBJG77dXOxnynrcjjrpaZjaMHkAEiUYAwACVgtyaEiwQFUH8ICAJoRTHEoI8zhKSbwtN15jhCBLXMhH+mHaoUBcuOiaLY1NhYUVbeq28ft8vVr2evGTNnvvDyMlmWJUmaOXFKUmrKm++/286skRMqVOZvdFT+WNdErrnru7om+98xvv0tiva32UuP+erdWRrijci4NjplNHJGArkyKj+ZNG5CdUXF4TOnzp46PWrQkJVrV0+ZPu3KUWMTkhI//fJzdawqy+uotwQa9akBxR3a7DGf19nsc9b6XM0+b4Ms21F2ASoMFQS1xLSWCnpJY5F0IRpDlMYQqTFGUEET0It4IH2HqMWXgsWiVCeZWmNbEIQFt96+auU3o8eNnTvv1tjY2GtnzHrv04+umDSRce5xuQilBoMhcBzjhAr1JdsbCr+Xue76e9acL6ylVPhtMtb//FJNJEP6p+btXHR2yzy1cSRjvmCEg6IoLz37woXc8x6PZ2DP3t1T02dPm9HY0PDwfUv6duuBiL9s2VpRUaFOkgfbMmKwk26H8h7B3qqBMiV/fbU3oOzQODLYFLhDo9Rgm9OWlpab51z/+suvXCwqTgiNmDt7zrVXzRo3dESfzO6dYhIKLuQjotp/NjAutXHkvrNb5uXtvHeIv3Hkv6HRr7+t74guBbvvPbPl9vqyvdjen1odiYKIN14zp3/PXrIsP//k00kR0QN79t67e09tdU1sSHhafNIHb72jdgTv0FPzkk6cPNidWkVNBa4du0uX5JJ3Wcd+mpeC3I4yIrqczhWffZ6Z3OmGWddUllcg4hf/WJ6ZlFpbU3Pm1OklC+/p3il9zXergkBjEOXyfWe23F6wZ3Ggxe8/0Uj2n8WaAsCk0V0L99x7ZutttSU7EJEz/7KrXYt//uHHE8eOI+LBffuTIqLLSksR8ZY5N1w7Y1Ze7vlh/XMG9OhVUnxRPexwtUN7oHEx58Fep3/V0veymKEAxIF2qe1fV3v9qve32WwOp3P1t98RgJ83/YCIb7zy2j8++RQR5829eUB2b7UHsL2tzd8K1b9JGCLWXdx+dsu8gj2LJ436nzT3/Z/S9fAueTsX526dV3lhA3boDt+hdA/Lzux2y/U3IuKhAwdDNfpBvfoe2LcPEVd/+31NdQ0G2tTyQMtadW6XxaGpnMPPQX7LRXjwv8sKBzFZloP4qneuKK8Y0KPXNdOvQsRh/XMWzb9z8pjxA3v2PnroMCJ63O6cXn3fffMtlZAZY+oeUOdVkb/h3NZ5eTvvHT+sy38C5Y50Pbhfysktd1/YPq/41OeM+YL7S1H8ndU/evf9/LwLiHjlqLH3L7znx42bUqPj77j1NuzQD/q2G+bOmTFr8w8/BvmJnwwDMAW5ahD1y6Lfgp9Rn3vZ3xHxwN59Tz3ymNPhKL1Y0ists1N0fGFBwb49ewHglaXLELGlqfmxBx4qKiyy2Ww2my0wPORM5siZ4rsYbMDeL/U/h3JHuu6aFr171bzi3Xec3/eSx9WIiIy1dz9W3aOH9h/QArz8/FJEbG5q2rl9hwoKIuaeO5cSGbtk0eLBffpPGDGquakJERvq6y9rdq/iqyiKKgM454qsKIHXQa7cLuuQV5SVb1q34doZsz569/0bZ10jADz16OOKotx87fVjBg+7f+E9iDhj4pT5N93y/dffdI5LnDlpalVVVTvEgV7gHlfj+f3LinfP373q9q5p0f9plP1YUwIAkeHmle/MKd+/8Mz2Ja11ZzDY9Z5zlfPKsrzjl21D+w7on5W99aefEZEzPzdf9uzzw/oNVP/Sp2vWO6+/6fF6e2V0HdK737zr57792hsV5eUet6e1tZVfCv0lPIpzu92ef+HCzu07mpuaiwoLR+UM6Z6SFmMJW7JocXFR8apvvh3Yo/e4YSM3rlv/yJIHnn3iqV5durlcrvwLF8IM5gE9ev2yeUtHhSSIckv9ubPbl5TtX/j1O9dFhZng36Rj/J1L9fJKgvDkPeNK9i0+98v8ivNrGfN10Ebae8e//fob106f6fP6gjrG4N79Xnp+qcpsRw8Z9sbLr544djw9IXnf7j0fvvve5DHjjx05+tYrr6XFJo4cMHj6lZOOHz2mbos7br7t808/U7/42rKXenTuMqTvgOy0zP5Z2ceOHN35y/Z9e/amxyedPX1GVeP6de/56gvLZk+dcf3M2evXrB3Wf+Bry15GxL179rTZbO3sLsD9mOItz11z7pc7Svfd++Q9YyRRgI7Vl/4rV6DoAkwc3e3oT3cV7b4jb+/zbS1Fl5B2gGurJKPu+iOHDiVHxBQVFCLi2dNnQjWGM6dOL//40xhL6Jf/WF6Qn+92uRHx+pmz586e01DfcP1VV48YMAgRN65bLwD079FL5afPPPbEiP6DEFGR5cykTl8u/1xdyH7ds1978SV1MR5YdO+Ns+f8tHETAHz87vsb167/5IOPgvgqihJUFhHR3lyc++vzRbvnH//x7kmju6n09M8E0vwBUf4vv692jhEo/Xnn+em3fbvnWIteqK849nrF+dVM8agBC5QAIRCs6qmesoryCzlnzz3x1EfvvHft9KvGThjfI7vnnt27s3tmH9p/YPLo8S8vfREAGhsbIqKiIiIj0jLSXS4XAKxa+e2iuxYa9PqtP20GgC7durY0N3+1/IvFCxYajYbhI0eoJ+ycIYMO7NuvPvG2BfO3/vxzfGLie2+9061H1tSrpt92x+1Bdx+l/shjprjLz68pO/6Gidb9eqx56ryVP+08r1qL/nYcwL//CgSLkGun9jn6w50X996Ru+ux+vL9jCsdqbsjey0rKX3jpVemTZj42EMP2+12xli3TulffrYcEX0+n8rHJwwf1TWl85De/dJjE9d8t8rpdKbFJZ47c/bBe+67esp0RDxy8FCcJWzuNdc9++RT3Tulf/X5lyoVr/t+dbQ5pKmxUaXcb79eWVpSGuTFiqJ01N4YlxvK9+Xueuzi3juO/rDg2qm9VNPsX9bH+u9cavwKAMREWl57YnLB7oUFu+Zf2LesufZUu5bNZM5Z8EzR8cBWXVk1tO+AXhldJ40d/+Di+3LPnmOMZSZ3WvXNdw6Ho7amFhHXrV4ToTONGTK8d5duXRJSmpub6+vq0+KSThw7hojXz5o9cfRYFeiK8vK75s2vrgzqEv4jlXpKaj/lc9ZSezp/37KCXfMLdt/92uOTYyIt8C9iF//eK0gF/XsmfvPOnIt77y7YeWfBgVeaqo/75WSAITKmyLKsntwYY4xzp9N5+uSpFcu/uHH2tT9t+tHr8XZPTTt04KBK44h45eix182cXVJ88dSJkynRcW+9+joiduuUtuqbb1X2/cQjj3WUBwFDCFcf0XFjMSY3Vp8oOPBy/q47ivYuXPnONf2zk8AfAfyvh/jfsmhqcKnaAWzM0PQ7ruvfp3sIcsbEeGvc4LC4/lIw90uNo7yk0n17oWvOeUN9gzXEqtVqAYAx9vUXX+YMHpzZrSsA7Ny+QxSE4aNGFhYUREdHW9RsF9X94Q/iCRrsOQCqdl1CiOy1N1cfbak5KMmVlNAT520frzy2fX+B6ujAfw9D/jfujuCgKaUjB3W+eVavAT0jNCJ4wagNyQqN7WcOSxMELXawaqK/OBECAKVC0DnUscy4So8EgLS7faHjWwE9LFDliPgjUpjis7cUtlYf89hydWD3KvTwmYYVa07vPljMuNrQAv7cS/J/FOgOcPuxy+4ad82U7FGD4qPDJUQiC5F6a6Y5srsxtJOkMV7q+PDXrEX096NX76bW6FCrR3DGgBBKKffDFHQDd1gAQhSv02G72Faf67VdEFiDQHhtk7LrQNWqH8+cyqsCVUMllP1V7d7/60B3gNs/9zCrcczQ9AkjO/fqFhZuphwERqyCPl5vSdWHpOhNsZLW6m8O9U/FgYOqpRHOuextcztqnLYyr62YuyoptFFgzW14Oq9p856iHfuKmlud0IHF/QcQ+I8KVrWdKQ/QTlxUyNCBqcP7J/XMDIuO0GolQJA40aMUKmojREOMRh+h0VkljYVKekHQUCoR2h6Ah1zhXOHMq8guxWeX3a0+d6PPU8889URuJeCioHh9WNvoPXuhZd+R8r1HS6rrWtXvClQtU/ef047/CxqMKtY7HgJMBn1mWmR2t9geGZGdkkOiw7VmAxEkgRKCQAAkJCKCBEQkRFCDMRAQgAEygj4CPoJMrfErK9zhUuqavMXlbecu1J06X3ehuN7p8odpEQKUEM7/C8eP/6aqqB7f1bNl8I+iIMREWZITQjslhibFWWOjzOHh2hCz3qQXtVouiYJACBBgDH2Meb3gcsutbUpDs6emoa28qq20vLm0qqW2vq2jZ1pVivl/BeDA9f8B1ibst+qCblEAAAAedEVYdGljYzpjb3B5cmlnaHQAR29vZ2xlIEluYy4gMjAxNqwLMzgAAAAUdEVYdGljYzpkZXNjcmlwdGlvbgBzUkdCupBzBwAAAABJRU5ErkJggg==" alt="LACoFD Lifeguard Division" />
+    </div>
+    <div class="header-titles">
+      <div class="report-label">// Marine Predictive Services Report</div>
+      <div class="report-title">Los Angeles County — Lifeguard Division</div>
+      <div class="report-subtitle">Coastal Operations Weather & Sea State Analysis · Southern California Coast</div>
+    </div>
+    <div class="header-meta">
+      <div class="issue-time">ISSUED: <span id="issue-time">--:-- PDT</span></div>
+      <div class="issue-time">VALID: <span id="valid-period">Loading...</span></div>
+      <div style="margin-top:8px"><span class="validity-badge" id="cycle-tag">MORNING CYCLE</span></div>
+      <div style="margin-top:8px">
+        <span class="live-indicator"><span class="live-dot"></span>LIVE DATA</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar" id="status-bar">
+  <div class="status-bar-inner">
+    <div class="status-item">
+      <div class="status-dot dot-blue blink"></div>
+      <span class="status-label">FETCHING DATA</span>
+      <span class="status-value">Please wait...</span>
+    </div>
+  </div>
+</div>
+
+<!-- LOCATION SELECTOR -->
+<div class="zone-selector-wrap" id="zone-selector-wrap">
+  <div class="zone-selector-inner">
+    <div class="zone-selector-label">📍 SELECT ZONE</div>
+    <div class="zone-chips" id="zone-chips">
+      <!-- injected by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ZONE DETAIL PANEL (hidden until a zone is selected) -->
+<div class="zone-detail-banner" id="zone-detail-banner" style="display:none">
+  <div class="zone-detail-inner">
+    <div class="zone-detail-left">
+      <div class="zone-detail-name" id="zone-detail-name">—</div>
+      <div class="zone-detail-bounds" id="zone-detail-bounds">—</div>
+    </div>
+    <button class="zone-clear-btn" onclick="clearZone()">✕ ALL ZONES</button>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main" id="main-content">
+  <div class="loading-state">
+    <div style="font-size:24px;margin-bottom:12px;">🌊</div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--brand-navy)">ACQUIRING NOAA · NWS · OPEN-METEO MARINE DATA</div>
+    <div class="loading-bar"><div class="loading-fill"></div></div>
+    <div style="margin-top:8px;font-size:10px;color:var(--text-dim);">Contacting api.weather.gov · open-meteo.com · tidesandcurrents.noaa.gov</div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div>
+    DATA SOURCES: NOAA/NWS — National Weather Service Los Angeles · Open-Meteo Marine API · NOAA Tides & Currents · CDIP Wave Buoys
+  </div>
+  <div>
+    SURFLINE.COM — Independent surf forecasting · For operational planning use only · Not for navigation
+  </div>
+  <div style="text-align:right">
+    <button class="refresh-btn" onclick="initReport()">⟳ REFRESH DATA</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// LACFD LIFEGUARD DIVISION — MARINE PREDICTIVE SERVICES REPORT
+// Data: NOAA/NWS API, Open-Meteo Marine, NOAA Tides & Currents
+// ============================================================
+
+// ============================================================
+// LACFD PATROL ZONES — with coordinates and boundary descriptions
+// ============================================================
+
+const PATROL_ZONES = [
+  {
+    id: 'cabrillo',
+    name: 'Cabrillo',
+    shortName: 'Cabrillo',
+    bounds: 'Outer Beach of Cabrillo',
+    lat: 33.7071, lon: -118.2930,
+    surflineUrl: 'https://www.surfline.com/surf-report/cabrillo-beach/584204214e65fad6a7709c8f',
+    notes: 'Harbor entrance currents, rocky intertidal zones, boat traffic from LA/LB Harbor. Sheltered from NW swells; more exposed to S/SW.',
+    hazards: ['Harbor entrance rip', 'Rocky bottom', 'Boat traffic', 'Reduced NW swell exposure']
+  },
+  {
+    id: 'torrance-redondo',
+    name: 'Torrance / Redondo',
+    shortName: 'Torrance/Redondo',
+    bounds: 'Rat Beach to Redondo Pier',
+    lat: 33.8400, lon: -118.3950,
+    surflineUrl: 'https://www.surfline.com/surf-report/sapphire-st-/584204214e65fad6a7709d0b',
+    notes: 'Redondo submarine canyon dramatically amplifies swell and creates strong rip currents. Pier pilings create additional hazard. Rat Beach is exposed.',
+    hazards: ['Submarine canyon rips', 'Pier piling hazard', 'Amplified swell', 'King Harbor currents']
+  },
+  {
+    id: 'hermosa',
+    name: 'Hermosa Beach',
+    shortName: 'Hermosa',
+    bounds: 'Redondo Breakwall / Harbor to 1st St Manhattan',
+    lat: 33.8622, lon: -118.3997,
+    surflineUrl: 'https://www.surfline.com/surf-report/hermosa-beach-pier/5b17281e4a274e001a11fcc3',
+    notes: 'Consistent beach break. Pier creates shadow and lateral drift. Longshore current strong during SW swells.',
+    hazards: ['Pier shadow rip', 'Longshore current', 'Shore break at low tide']
+  },
+  {
+    id: 'manhattan',
+    name: 'Manhattan Beach',
+    shortName: 'Manhattan',
+    bounds: '1st St Manhattan to El Segundo Jetty',
+    lat: 33.8838, lon: -118.4103,
+    surflineUrl: 'https://www.surfline.com/surf-report/manhattan-beach-pier/584204214e65fad6a7709c09',
+    notes: 'El Porto is the most exposed section; strong shore break and rip channels. Pier creates rip. Sand bars shift seasonally.',
+    hazards: ['El Porto shore break', 'Shifting sandbars', 'Pier rip channel', 'Strong longshore drift']
+  },
+  {
+    id: 'elsegundo',
+    name: 'El Segundo / Dockweiler',
+    shortName: 'El Segundo',
+    bounds: 'El Segundo Jetty to Marina del Rey Harbor',
+    lat: 33.9166, lon: -118.4326,
+    surflineUrl: 'https://www.surfline.com/surf-report/dockweiler-state-beach/584204214e65fad6a7709c05',
+    notes: 'Broad exposed beach. Jetty creates rip on outgoing tide. LAX low-approach flight path over water. Relatively consistent sand bottom.',
+    hazards: ['Jetty rip current', 'LAX aircraft', 'Exposed to all swells', 'Outflow from Ballona Creek']
+  },
+  {
+    id: 'venice',
+    name: 'Venice',
+    shortName: 'Venice',
+    bounds: 'N. side of Marina del Rey Harbor to Venice/SM Border',
+    lat: 33.9850, lon: -118.4695,
+    surflineUrl: 'https://www.surfline.com/surf-report/venice-beach/5842041f4e65fad6a7708819',
+    notes: 'Marina del Rey jetties create strong lateral currents especially on outgoing tide. Ballona Creek outflow during rains. Active pedestrian beach.',
+    hazards: ['Marina jetty currents', 'Ballona Creek runoff', 'Crowded beach', 'High pedestrian activity']
+  },
+  {
+    id: 'sm-south',
+    name: 'Santa Monica South',
+    shortName: 'SM South',
+    bounds: 'South of SM Pier to Venice Border',
+    lat: 34.0000, lon: -118.4820,
+    surflineUrl: 'https://www.surfline.com/surf-report/santa-monica-beach/584204214e65fad6a7709bdf',
+    notes: 'Pier shadow creates rip on both sides. Sandy bottom with shifting bars. High tourist foot traffic. Relatively consistent conditions.',
+    hazards: ['Pier shadow rip', 'High crowd density', 'Tourist-heavy zone', 'Shore break at low tide']
+  },
+  {
+    id: 'sm-north',
+    name: 'Santa Monica North',
+    shortName: 'SM North',
+    bounds: 'North of SM Pier to Will Rogers Border',
+    lat: 34.0120, lon: -118.4980,
+    surflineUrl: 'https://www.surfline.com/surf-report/santa-monica-beach/584204214e65fad6a7709bdf',
+    notes: 'North side of pier creates rip on NW swells. More open beach profile. Lower crowd density than south side.',
+    hazards: ['North pier rip', 'NW swell exposure', 'Moderate crowd density']
+  },
+  {
+    id: 'willrogers',
+    name: 'Will Rogers',
+    shortName: 'Will Rogers',
+    bounds: 'Will Rogers State Beach through Topanga',
+    lat: 34.0330, lon: -118.5310,
+    surflineUrl: 'https://www.surfline.com/surf-report/pacific-palisades/584204214e65fad6a7709b93',
+    notes: 'Rocky outcroppings near Topanga. Topanga Creek outflow creates hazard during and after rain. Rip channels form at creek mouth and reef sections.',
+    hazards: ['Topanga Creek outflow', 'Rocky outcroppings', 'Reef rip channels', 'Remote sections']
+  },
+  {
+    id: 'malibu',
+    name: 'Malibu',
+    shortName: 'Malibu',
+    bounds: 'Malibu Pier / Surfrider Beach',
+    lat: 34.0359, lon: -118.6920,
+    surflineUrl: 'https://www.surfline.com/surf-report/malibu-first-point/584204214e65fad6a7709b9f',
+    notes: 'Classic point break — waves wrap around the point and can dramatically exceed open-ocean height. Heavy surf crowd. Pier creates hazard. Rocky reef at low tide.',
+    hazards: ['Point break amplification', 'Heavy surf crowd', 'Rocky reef', 'Pier pilings', 'Longshore sweep']
+  },
+  {
+    id: 'pointdume',
+    name: 'Point Dume',
+    shortName: 'Pt Dume',
+    bounds: 'Point Dume North to Zuma Parking Lots',
+    lat: 34.0005, lon: -118.8062,
+    surflineUrl: 'https://www.surfline.com/surf-report/point-dume/584204214e65fad6a7709b6f',
+    notes: 'Point Dume headland creates complex swell refraction. Westward-facing coves catch NW swells hard. Rocky cliffs. Limited access. Seal colony area.',
+    hazards: ['Swell refraction', 'Rocky cliffs/bottom', 'Limited access', 'No lifeguard towers in some sections', 'Strong rips at point']
+  },
+  {
+    id: 'zuma',
+    name: 'Zuma',
+    shortName: 'Zuma',
+    bounds: 'Zuma Beach Area North to Broad Beach',
+    lat: 34.0155, lon: -118.8228,
+    surflineUrl: 'https://www.surfline.com/surf-report/zuma-beach/5afb6566bb6fd9001a250fbb',
+    notes: 'Most exposed LA County beach to NW swells. Zuma Creek mouth creates persistent rip channel. Wide beach, multiple tower sections. Strong shore break during large NW.',
+    hazards: ['NW swell exposure', 'Zuma Creek mouth rip', 'Shore break', 'Strong longshore current during NW']
+  }
+];
+
+// Active zone state
+let activeZoneId = null;
+
+function initZoneSelector() {
+  const container = document.getElementById('zone-chips');
+  if (!container) return;
+  container.innerHTML = PATROL_ZONES.map(z => `
+    <button class="zone-chip" id="chip-${z.id}" onclick="selectZone('${z.id}')">${z.shortName}</button>
+  `).join('');
+}
+
+function selectZone(zoneId) {
+  const zone = PATROL_ZONES.find(z => z.id === zoneId);
+  if (!zone) return;
+
+  activeZoneId = zoneId;
+
+  // Update chips
+  document.querySelectorAll('.zone-chip').forEach(c => c.classList.remove('active'));
+  const chip = document.getElementById('chip-' + zoneId);
+  if (chip) {
+    chip.classList.add('active');
+    chip.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
+
+  // Show banner
+  const banner = document.getElementById('zone-detail-banner');
+  document.getElementById('zone-detail-name').textContent = zone.name;
+  document.getElementById('zone-detail-bounds').textContent = zone.bounds;
+  banner.style.display = '';
+
+  // Highlight beach zone cards
+  document.querySelectorAll('.beach-zone').forEach(el => {
+    const name = el.getAttribute('data-zone-id');
+    if (name === zoneId) {
+      el.classList.add('zone-active');
+      el.classList.remove('zone-dimmed');
+    } else {
+      el.classList.remove('zone-active');
+      el.classList.add('zone-dimmed');
+    }
+  });
+
+  // Scroll to or inject zone detail report
+  const detailEl = document.getElementById('zone-drilldown');
+  if (detailEl) {
+    detailEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    renderZoneDrilldown(zone);
+  }
+
+  // Re-fetch marine data centered on this zone
+  fetchZoneData(zone);
+}
+
+function clearZone() {
+  activeZoneId = null;
+
+  document.querySelectorAll('.zone-chip').forEach(c => c.classList.remove('active'));
+  document.getElementById('zone-detail-banner').style.display = 'none';
+
+  document.querySelectorAll('.beach-zone').forEach(el => {
+    el.classList.remove('zone-active', 'zone-dimmed');
+  });
+
+  const detailEl = document.getElementById('zone-drilldown');
+  if (detailEl) detailEl.innerHTML = '';
+
+  // Restore global data
+  initReport();
+}
+
+async function fetchZoneData(zone) {
+  // Show loading in drilldown
+  const detailEl = document.getElementById('zone-drilldown');
+  if (detailEl) {
+    detailEl.innerHTML = `<div class="loading-state" style="padding:24px">
+      <div style="font-size:20px;margin-bottom:8px">📍</div>
+      <div style="font-weight:700;color:var(--brand-navy)">${zone.name}</div>
+      <div style="margin-top:4px;color:var(--text-dim);font-size:13px">Fetching zone-specific data...</div>
+      <div class="loading-bar" style="margin:12px auto"><div class="loading-fill"></div></div>
+    </div>`;
+  }
+
+  try {
+    const [marine, atmos] = await Promise.all([
+      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${zone.lat}&longitude=${zone.lon}&hourly=wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period,wind_wave_height,wind_wave_direction&daily=wave_height_max,wave_direction_dominant,wave_period_max,swell_wave_height_max,swell_wave_direction_dominant,swell_wave_period_max&wind_speed_unit=mph&length_unit=imperial&timezone=America%2FLos_Angeles&forecast_days=3`).then(r => r.json()),
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${zone.lat}&longitude=${zone.lon}&hourly=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,uv_index,weather_code&daily=wind_speed_10m_max,wind_gusts_10m_max,uv_index_max,sunrise,sunset&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=America%2FLos_Angeles&forecast_days=3`).then(r => r.json())
+    ]);
+    renderZoneDrilldown(zone, marine, atmos);
+  } catch(e) {
+    if (detailEl) detailEl.innerHTML = `<div class="loading-state"><div style="color:var(--brand-red)">⚠ Zone data fetch failed</div></div>`;
+  }
+}
+
+function renderZoneDrilldown(zone, marine, atmos) {
+  const el = document.getElementById('zone-drilldown');
+  if (!el) return;
+
+  const now = new Date();
+  let hi = 0, waveHt = '--', wavePer = '--', waveDir = '--', swellHt = '--', swellPer = '--', swellDir = '--';
+  let windSpd = '--', windGst = '--', windDir = '--', uvi = '--', vis = '--', temp = '--', wxCode = 0;
+  let dayMaxWave = '--', dayMaxSwell = '--', swellDirMax = '--';
+
+  if (marine && atmos) {
+    hi = getCurrentHourIndex(marine.hourly.time);
+    waveHt  = marine.hourly.wave_height[hi];
+    wavePer = marine.hourly.wave_period[hi];
+    waveDir = marine.hourly.wave_direction[hi];
+    swellHt = marine.hourly.swell_wave_height[hi];
+    swellPer = marine.hourly.swell_wave_period[hi];
+    swellDir = marine.hourly.swell_wave_direction[hi];
+    windSpd  = atmos.hourly.wind_speed_10m[hi];
+    windGst  = atmos.hourly.wind_gusts_10m[hi];
+    windDir  = atmos.hourly.wind_direction_10m[hi];
+    uvi      = Math.round(atmos.hourly.uv_index[hi] || 0);
+    vis      = atmos.hourly.visibility[hi];
+    temp     = Math.round(atmos.hourly.temperature_2m[hi]);
+    wxCode   = atmos.hourly.weather_code[hi];
+    dayMaxWave  = marine.daily.wave_height_max[0];
+    dayMaxSwell = marine.daily.swell_wave_height_max[0];
+    swellDirMax = marine.daily.swell_wave_direction_dominant[0];
+  }
+
+  const fmt = v => (typeof v === 'number') ? v.toFixed(1) : '--';
+  const fmtI = v => (typeof v === 'number') ? Math.round(v) : '--';
+  const visMi = (typeof vis === 'number') ? (vis / 1609.34).toFixed(1) : '--';
+  const swellRisk  = getSwellRiskLevel(typeof waveHt === 'number' ? waveHt : 0);
+  const ripRisk    = getRipTideRisk(typeof waveHt === 'number' ? waveHt : 0, typeof wavePer === 'number' ? wavePer : 8, 2.5);
+  const windRisk   = getWindRiskLevel(typeof windSpd === 'number' ? windSpd : 0);
+  const rColor = swellRisk.level==='LOW'?'#0d7a4e':swellRisk.level==='MODERATE'?'#c49000':swellRisk.level==='HIGH'?'#e05c00':'#cc1a1a';
+  const ripColor = ripRisk.level==='LOW'?'#0d7a4e':ripRisk.level==='MODERATE'?'#c49000':ripRisk.level==='HIGH'?'#e05c00':'#cc1a1a';
+
+  // 3-day rows
+  let dayRows = '';
+  if (marine && atmos) {
+    ['TODAY','TOMORROW','DAY 3'].forEach((d, i) => {
+      if (i >= marine.daily.time.length) return;
+      const mxW = marine.daily.wave_height_max[i];
+      const mxS = marine.daily.swell_wave_height_max[i];
+      const sd  = marine.daily.swell_wave_direction_dominant[i];
+      const mxWind = atmos.daily.wind_speed_10m_max[i];
+      const mxUV = atmos.daily.uv_index_max[i];
+      const dr = getSwellRiskLevel(mxW || 0);
+      const dc = dr.level==='LOW'?'var(--green)':dr.level==='MODERATE'?'#c49000':dr.level==='HIGH'?'#e05c00':'var(--brand-red)';
+      dayRows += `<tr>
+        <td style="font-weight:700;color:var(--text-bright)">${d}</td>
+        <td style="font-weight:700;color:${dc}">${fmt(mxW)} ft</td>
+        <td style="color:var(--brand-navy);font-weight:700">${fmt(mxS)} ft</td>
+        <td>${degToCardinal(sd)}</td>
+        <td>${fmtI(mxWind)} mph</td>
+        <td style="color:${mxUV>=8?'#cc1a1a':mxUV>=6?'#e05c00':mxUV>=3?'#c49000':'#0d7a4e'}">${fmtI(mxUV)}</td>
+      </tr>`;
+    });
+  }
+
+  // Hazard tags
+  const hazardTags = zone.hazards.map(h =>
+    `<span style="display:inline-block;background:var(--orange-bg);color:var(--orange);border:1px solid #f5c08a;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;margin:2px">${h}</span>`
+  ).join('');
+
+  el.innerHTML = `
+    <div class="fade-in" style="background:var(--surface);border:2px solid var(--accent);border-radius:12px;overflow:hidden;margin-bottom:4px">
+
+      <!-- Zone Header -->
+      <div style="background:var(--brand-navy);border-bottom:3px solid var(--brand-red);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-family:var(--font-title);font-size:11px;font-weight:700;color:var(--brand-gold);text-transform:uppercase;letter-spacing:2px">Zone Report</div>
+          <div style="font-family:var(--font-title);font-size:22px;font-weight:900;color:#fff;margin-top:2px;text-transform:uppercase;letter-spacing:1px">${zone.name}</div>
+          <div style="font-family:var(--font-body);font-size:12px;color:rgba(212,186,107,0.75);margin-top:2px">📍 ${zone.bounds}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:var(--mono);font-size:11px;color:rgba(255,255,255,0.55)">ISSUED ${now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/Los_Angeles'})} PDT</div>
+          <a href="${zone.surflineUrl}" target="_blank" style="display:inline-block;margin-top:6px;background:rgba(212,186,107,0.15);border:1px solid var(--brand-gold);border-radius:3px;padding:4px 12px;font-family:var(--font-title);font-size:12px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:var(--brand-gold);text-decoration:none">🏄 Surfline ↗</a>
+        </div>
+      </div>
+
+      <div style="padding:14px;display:grid;gap:14px">
+
+        <!-- Current conditions row -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:10px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:4px">🌊 Waves</div>
+            <div style="font-size:30px;font-weight:800;color:${rColor};line-height:1">${fmt(waveHt)}</div>
+            <div style="font-size:11px;color:var(--text-dim);font-weight:500">ft · ${fmt(wavePer)}s</div>
+            <div style="margin-top:6px"><span class="hc-status ${swellRisk.class}" style="font-size:10px">${swellRisk.level}</span></div>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:10px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:4px">〰️ Rip Current</div>
+            <div style="font-size:20px;font-weight:800;color:${ripColor};line-height:1.1">${ripRisk.level}</div>
+            <div style="font-size:11px;color:var(--text-dim);margin-top:4px">Swell ${degToCardinal(swellDir)} ${fmt(swellHt)}ft @ ${fmtI(swellPer)}s</div>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:10px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:4px">💨 Wind</div>
+            <div style="font-size:26px;font-weight:800;color:var(--text-bright);line-height:1">${fmtI(windSpd)}</div>
+            <div style="font-size:11px;color:var(--text-dim);font-weight:500">mph ${degToCardinal(windDir)} · G${fmtI(windGst)}</div>
+            <div style="margin-top:6px"><span class="hc-status ${windRisk.class}" style="font-size:10px">${windRisk.level}</span></div>
+          </div>
+        </div>
+
+        <!-- Local hazards -->
+        <div style="background:var(--orange-bg);border:1px solid #f5c08a;border-left:4px solid var(--orange);border-radius:8px;padding:12px 14px">
+          <div style="font-size:12px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">⚠ Local Hazards & Notes</div>
+          <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:8px">${zone.notes}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">${hazardTags}</div>
+        </div>
+
+        <!-- 3-day outlook -->
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">3-Day Outlook — ${zone.name}</div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:auto">
+            <table class="data-table">
+              <thead><tr><th>Day</th><th>Max Wave</th><th>Swell</th><th>Dir</th><th>Wind</th><th>UV</th></tr></thead>
+              <tbody>${dayRows || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">Fetching...</td></tr>'}</tbody>
+            </table>
+          </div>
+          <div class="source-note">SOURCE: OPEN-METEO MARINE · COORDS ${zone.lat.toFixed(4)}, ${zone.lon.toFixed(4)}</div>
+        </div>
+
+        <!-- Additional conditions -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+            <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;margin-bottom:8px">Current Conditions</div>
+            ${[
+              ['Air Temp', `${temp}°F`],
+              ['Visibility', `${visMi} mi`],
+              ['UV Index', `${uvi} — ${getUVRiskLevel(typeof uvi === 'number' ? uvi : 0).level}`],
+              ['Sky', getWMODescription(wxCode)],
+            ].map(([k,v]) => `<div class="bz-stat"><span class="bz-key">${k}</span><span class="bz-val">${v}</span></div>`).join('')}
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+            <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;margin-bottom:8px">Daily Maximums</div>
+            ${[
+              ['Max Wave', `${fmt(dayMaxWave)} ft`],
+              ['Max Swell', `${fmt(dayMaxSwell)} ft`],
+              ['Swell Dir', degToCardinal(swellDirMax)],
+              ['Wind Max', `${fmtI(atmos && atmos.daily ? atmos.daily.wind_speed_10m_max[0] : '--')} mph`],
+            ].map(([k,v]) => `<div class="bz-stat"><span class="bz-key">${k}</span><span class="bz-val" style="color:var(--brand-navy)">${v}</span></div>`).join('')}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `;
+
+}
+
+const LA_BEACHES = [
+  { name: "Zuma Beach", lat: 34.0155, lon: -118.8228, zone: "North" },
+  { name: "Malibu / PCH", lat: 34.0359, lon: -118.6920, zone: "North" },
+  { name: "Santa Monica", lat: 34.0059, lon: -118.4965, zone: "Central" },
+  { name: "Venice Beach", lat: 33.9850, lon: -118.4695, zone: "Central" },
+  { name: "El Segundo / Dockweiler", lat: 33.9166, lon: -118.4326, zone: "South" },
+  { name: "Manhattan Beach", lat: 33.8838, lon: -118.4103, zone: "South" },
+  { name: "Hermosa / Redondo", lat: 33.8622, lon: -118.3978, zone: "South" },
+  { name: "Cabrillo / San Pedro", lat: 33.7071, lon: -118.2930, zone: "Harbor" }
+];
+
+// Representative coordinates for LA County marine area
+const MARINE_LAT = 33.95;
+const MARINE_LON = -118.50;
+const NOAA_STATION = "9410660"; // Los Angeles tide gauge
+
+let reportData = {};
+
+async function fetchNWSForecast() {
+  try {
+    // Get grid point
+    const pointResp = await fetch(`https://api.weather.gov/points/${MARINE_LAT},${MARINE_LON}`);
+    const pointData = await pointResp.json();
+    const { gridX, gridY, gridId } = pointData.properties;
+
+    // Get hourly forecast
+    const forecastResp = await fetch(pointData.properties.forecastHourly);
+    const forecastData = await forecastResp.json();
+
+    // Get marine/coastal zone forecast
+    const gridResp = await fetch(`https://api.weather.gov/gridpoints/${gridId}/${gridX},${gridY}`);
+    const gridData = await gridResp.json();
+
+    // Fetch alerts directly for the specific NWS coastal and marine zones
+    // that cover LA County beaches — this avoids inland/mountain/desert zones entirely
+    //
+    // NWS Zone codes for LA County operational area:
+    //   CAZ041 — Los Angeles County Beaches (coastal zone)
+    //   CAZ042 — Santa Monica Bay (coastal zone)
+    //   CAZ043 — Los Angeles County Coast (coastal zone)
+    //   PZZ150 — Santa Monica Bay (marine zone)
+    //   PZZ155 — San Pedro Bay (marine zone)
+    //   PZZ160 — San Pedro Channel (marine zone)
+    //   PZZ775 — Point Conception to Santa Monica Bay (offshore)
+    //   PZZ780 — Santa Monica Bay to San Clemente (offshore)
+    const COASTAL_ZONES = ['CAZ041','CAZ042','CAZ043','PZZ150','PZZ155','PZZ160','PZZ770','PZZ775','PZZ780'];
+
+    // Fetch alerts for each zone in parallel, then merge & deduplicate
+    const zoneAlertFetches = COASTAL_ZONES.map(zone =>
+      fetch(`https://api.weather.gov/alerts/active/zone/${zone}`)
+        .then(r => r.json())
+        .catch(() => ({ features: [] }))
+    );
+    const zoneResults = await Promise.all(zoneAlertFetches);
+
+    // Collect all alerts, deduplicate by ID
+    const seen = new Set();
+    const allZoneAlerts = [];
+    zoneResults.forEach(result => {
+      (result.features || []).forEach(f => {
+        if (!seen.has(f.id)) {
+          seen.add(f.id);
+          allZoneAlerts.push(f);
+        }
+      });
+    });
+
+    // Event type allowlist — only alert types relevant to ocean lifeguards
+    // Explicitly excludes: winter weather, freeze, frost, heat (inland),
+    // tornado, thunderstorm, flood (river/inland), dust, fire weather
+    const ALLOWED_EVENTS = [
+      'high surf',
+      'surf',
+      'rip current',
+      'beach hazards',
+      'coastal flood',
+      'marine weather statement',
+      'special marine warning',
+      'marine wind warning',
+      'small craft advisory',
+      'gale warning',
+      'storm warning',
+      'hurricane force wind warning',
+      'dense fog advisory',
+      'coastal hazard message',
+      'wind advisory',        // only passes if in a coastal zone (already filtered above)
+      'wind warning',         // only passes if in a coastal zone
+      'hazardous seas',
+      'tsunami warning',
+      'tsunami watch',
+      'tsunami advisory',
+      'tsunami statement',
+      'tropical storm warning',
+      'tropical storm watch',
+      'hurricane warning',
+      'hurricane watch',
+      'ashfall advisory',     // volcanic ash can affect marine ops
+      'brisk wind advisory',
+      'lake wind advisory',
+    ];
+
+    const marineAlerts = allZoneAlerts.filter(f => {
+      const ev = (f.properties.event || '').toLowerCase();
+      return ALLOWED_EVENTS.some(allowed => ev.includes(allowed));
+    });
+
+    // Sort by severity — warnings first, then watches, then advisories/statements
+    const severityOrder = (ev) => {
+      const e = ev.toLowerCase();
+      if (e.includes('warning')) return 0;
+      if (e.includes('watch')) return 1;
+      if (e.includes('advisory')) return 2;
+      return 3;
+    };
+    marineAlerts.sort((a, b) =>
+      severityOrder(a.properties.event) - severityOrder(b.properties.event)
+    );
+
+    return { forecastData, gridData, marineAlerts, gridId, gridX, gridY };
+  } catch(e) {
+    console.error("NWS fetch error:", e);
+    return null;
+  }
+}
+
+async function fetchOpenMeteoMarine() {
+  try {
+    const url = `https://marine-api.open-meteo.com/v1/marine?` +
+      `latitude=${MARINE_LAT}&longitude=${MARINE_LON}` +
+      `&hourly=wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period,wind_wave_height,wind_wave_direction,wind_wave_period,ocean_current_velocity,ocean_current_direction` +
+      `&daily=wave_height_max,wave_direction_dominant,wave_period_max,swell_wave_height_max,swell_wave_direction_dominant,swell_wave_period_max` +
+      `&wind_speed_unit=mph&length_unit=imperial&timezone=America%2FLos_Angeles&forecast_days=3`;
+
+    const resp = await fetch(url);
+    const data = await resp.json();
+    return data;
+  } catch(e) {
+    console.error("Open-Meteo marine fetch error:", e);
+    return null;
+  }
+}
+
+async function fetchOpenMeteoAtmos() {
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?` +
+      `latitude=${MARINE_LAT}&longitude=${MARINE_LON}` +
+      `&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,uv_index,precipitation,pressure_msl,apparent_temperature,weather_code` +
+      `&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max,wind_gusts_10m_max,uv_index_max,sunrise,sunset,precipitation_sum` +
+      `&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=America%2FLos_Angeles&forecast_days=3`;
+
+    const resp = await fetch(url);
+    const data = await resp.json();
+    return data;
+  } catch(e) {
+    console.error("Open-Meteo atmos fetch error:", e);
+    return null;
+  }
+}
+
+async function fetchNOAATides() {
+  try {
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}`;
+    const tomorrow = new Date(today); tomorrow.setDate(today.getDate()+1);
+    const tomorrowStr = `${tomorrow.getFullYear()}${String(tomorrow.getMonth()+1).padStart(2,'0')}${String(tomorrow.getDate()).padStart(2,'0')}`;
+
+    const url = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?` +
+      `begin_date=${dateStr}&end_date=${tomorrowStr}&station=${NOAA_STATION}` +
+      `&product=predictions&datum=MLLW&time_zone=lst_ldt&interval=hilo&units=english&application=lacfd_lifeguard&format=json`;
+
+    const resp = await fetch(url);
+    const data = await resp.json();
+    return data;
+  } catch(e) {
+    console.error("NOAA tides fetch error:", e);
+    return null;
+  }
+}
+
+async function fetchNOAAWaterTemp() {
+  try {
+    // Note: water_temperature product does NOT use datum parameter
+    const url = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?` +
+      `station=${NOAA_STATION}&product=water_temperature` +
+      `&time_zone=lst_ldt&units=english&application=lacfd_lifeguard&format=json&range=2`;
+
+    const resp = await fetch(url);
+    const data = await resp.json();
+
+    // Check for NOAA API error response
+    if (data.error) {
+      console.warn('NOAA water temp error:', data.error.message);
+      return null;
+    }
+    // Validate we have actual readings
+    if (!data.data || data.data.length === 0) {
+      console.warn('NOAA water temp: no data returned');
+      return null;
+    }
+    return data;
+  } catch(e) {
+    console.error("NOAA water temp fetch error:", e);
+    return null;
+  }
+}
+
+async function fetchOpenMeteoSST() {
+  // Fallback sea surface temperature from Open-Meteo Marine API
+  try {
+    const url = `https://marine-api.open-meteo.com/v1/marine?` +
+      `latitude=${MARINE_LAT}&longitude=${MARINE_LON}` +
+      `&hourly=sea_surface_temperature` +
+      `&temperature_unit=fahrenheit&timezone=America%2FLos_Angeles&forecast_days=1`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    return data;
+  } catch(e) {
+    console.error("Open-Meteo SST fetch error:", e);
+    return null;
+  }
+}
+
+// Utility functions
+function degToCardinal(deg) {
+  if (deg == null) return 'N/A';
+  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return dirs[Math.round(deg/22.5) % 16];
+}
+
+function fmtTime(isoStr) {
+  if (!isoStr) return '--:--';
+  const d = new Date(isoStr);
+  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
+}
+
+function fmtDateTime(isoStr) {
+  if (!isoStr) return '---';
+  const d = new Date(isoStr);
+  return d.toLocaleString('en-US', { weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit', timeZone:'America/Los_Angeles' });
+}
+
+function getWMODescription(code) {
+  const codes = {
+    0:'Clear Sky', 1:'Mainly Clear', 2:'Partly Cloudy', 3:'Overcast',
+    45:'Fog', 48:'Rime Fog', 51:'Light Drizzle', 53:'Drizzle', 55:'Heavy Drizzle',
+    61:'Light Rain', 63:'Rain', 65:'Heavy Rain', 71:'Light Snow', 73:'Snow', 75:'Heavy Snow',
+    77:'Snow Grains', 80:'Light Showers', 81:'Showers', 82:'Heavy Showers',
+    85:'Snow Showers', 86:'Heavy Snow Showers', 95:'Thunderstorm', 96:'Thunderstorm w/Hail', 99:'Thunderstorm w/Heavy Hail'
+  };
+  return codes[code] || `Code ${code}`;
+}
+
+function getSwellRiskLevel(heightFt) {
+  if (heightFt >= 8) return { level: 'EXTREME', class: 'status-extreme', color: 'var(--brand-red)' };
+  if (heightFt >= 5) return { level: 'HIGH', class: 'status-high', color: '#e05c00' };
+  if (heightFt >= 3) return { level: 'MODERATE', class: 'status-moderate', color: '#c49000' };
+  return { level: 'LOW', class: 'status-low', color: '#00cc88' };
+}
+
+function getWindRiskLevel(speedMph) {
+  if (speedMph >= 35) return { level: 'EXTREME', class: 'status-extreme', color: 'var(--brand-red)' };
+  if (speedMph >= 25) return { level: 'HIGH', class: 'status-high', color: '#e05c00' };
+  if (speedMph >= 15) return { level: 'MODERATE', class: 'status-moderate', color: '#c49000' };
+  return { level: 'LOW', class: 'status-low', color: '#00cc88' };
+}
+
+function getRipTideRisk(waveHeight, wavePeriod, tideChange) {
+  let score = 0;
+  if (waveHeight > 4) score += 3;
+  else if (waveHeight > 2) score += 2;
+  else score += 1;
+  if (wavePeriod > 14) score += 2;
+  else if (wavePeriod > 10) score += 1;
+  if (tideChange > 2) score += 1;
+  if (score >= 5) return { level: 'EXTREME', class: 'status-extreme', pct: 95 };
+  if (score >= 4) return { level: 'HIGH', class: 'status-high', pct: 70 };
+  if (score >= 3) return { level: 'MODERATE', class: 'status-moderate', pct: 45 };
+  return { level: 'LOW', class: 'status-low', pct: 20 };
+}
+
+function getUVRiskLevel(uvi) {
+  if (uvi >= 11) return { level: 'EXTREME', color: '#9900cc' };
+  if (uvi >= 8) return { level: 'VERY HIGH', color: 'var(--brand-red)' };
+  if (uvi >= 6) return { level: 'HIGH', color: '#e05c00' };
+  if (uvi >= 3) return { level: 'MODERATE', color: '#c49000' };
+  return { level: 'LOW', color: '#00cc88' };
+}
+
+function getCurrentHourIndex(timeArray) {
+  const now = new Date();
+  const nowISO = now.toISOString().substring(0,13);
+  for (let i = 0; i < timeArray.length; i++) {
+    if (timeArray[i].startsWith(nowISO)) return i;
+  }
+  return 0;
+}
+
+function windArrow(deg) {
+  const arrows = ['↑','↗','→','↘','↓','↙','←','↖'];
+  return arrows[Math.round(((deg+180)%360)/45) % 8];
+}
+
+// Generate narrative
+function generateNarrative(marine, atmos, tides, nws) {
+  const now = new Date();
+  const hi = getCurrentHourIndex(marine.hourly.time);
+
+  const waveHt = marine.hourly.wave_height[hi];
+  const wavePer = marine.hourly.wave_period[hi];
+  const waveDir = marine.hourly.wave_direction[hi];
+  const swellHt = marine.hourly.swell_wave_height[hi];
+  const swellPer = marine.hourly.swell_wave_period[hi];
+  const swellDir = marine.hourly.swell_wave_direction[hi];
+
+  const windSpd = atmos.hourly.wind_speed_10m[hi];
+  const windGst = atmos.hourly.wind_gusts_10m[hi];
+  const windDir = atmos.hourly.wind_direction_10m[hi];
+  const temp = Math.round(atmos.hourly.temperature_2m[hi]);
+  const humidity = atmos.hourly.relative_humidity_2m[hi];
+  const vis = atmos.hourly.visibility[hi];
+  const uvi = atmos.hourly.uv_index[hi];
+  const wxCode = atmos.hourly.weather_code[hi];
+
+  const visMi = vis ? (vis / 1609.34).toFixed(1) : 'N/A';
+
+  const ripRisk = getRipTideRisk(waveHt, wavePer, 2.5);
+  const swellRisk = getSwellRiskLevel(waveHt);
+  const windRisk = getWindRiskLevel(windSpd);
+
+  const dayMaxWave = marine.daily.wave_height_max[0];
+  const dayMaxSwell = marine.daily.swell_wave_height_max[0];
+
+  const lines = [
+`SYNOPSIS / SEA STATE ANALYSIS — ISSUED ${now.toLocaleString('en-US',{timeZone:'America/Los_Angeles',month:'short',day:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})} PDT`,
+``,
+`OVERVIEW:`,
+`Current sea state for Los Angeles County coastal waters reflects ${swellRisk.level.toLowerCase()} ocean hazards. `,
+`Combined wave height is ${waveHt ? waveHt.toFixed(1) : '--'} ft out of a projected daily maximum of ${dayMaxWave ? dayMaxWave.toFixed(1) : '--'} ft.`,
+`Primary swell is tracking from ${degToCardinal(swellDir)} at ${swellHt ? swellHt.toFixed(1) : '--'} ft with a period of ${swellPer ? Math.round(swellPer) : '--'}s.`,
+``,
+`WIND & ATMOSPHERIC CONDITIONS:`,
+`Surface winds are from the ${degToCardinal(windDir)} at ${Math.round(windSpd)} mph, gusting to ${Math.round(windGst)} mph.`,
+`Air temperature is ${temp}°F with relative humidity at ${humidity}%. Sky/weather condition: ${getWMODescription(wxCode)}.`,
+`Marine layer visibility is approximately ${visMi} miles.`,
+``,
+`RIP CURRENT THREAT:`,
+`Rip current potential is assessed as ${ripRisk.level} for all LA County beaches.`,
+`Wave period of ${wavePer ? Math.round(wavePer) : '--'}s indicates ${wavePer > 12 ? 'longer-period ground swell which significantly increases rip current and shore break danger.' : 'shorter-period wind swell with moderate rip current potential.'}`,
+``,
+`UV / HEAT EXPOSURE:`,
+`UV Index is ${uvi ? Math.round(uvi) : '--'} (${uvi ? getUVRiskLevel(uvi).level : 'N/A'}). All personnel on extended beach patrol should take appropriate sun protection measures.`,
+``,
+`OPERATIONAL OUTLOOK (TODAY):`,
+`Maximum wave height expected: ${dayMaxWave ? dayMaxWave.toFixed(1) : '--'} ft. Maximum swell: ${dayMaxSwell ? dayMaxSwell.toFixed(1) : '--'} ft.`,
+`Lifeguards should anticipate ${swellRisk.level === 'HIGH' || swellRisk.level === 'EXTREME' ? 'ELEVATED water rescue potential. Consider deploying additional tower staffing and jet ski teams.' : swellRisk.level === 'MODERATE' ? 'MODERATE water rescue potential. Standard deployment with heightened situational awareness.' : 'LOW-MODERATE water rescue potential. Standard deployment protocols apply.'}`,
+``,
+`NOTE: This report supplements but does not replace real-time tower observations and local knowledge. `,
+`Lifeguard judgment based on direct observation supersedes automated forecasts.`,
+`Data sources: NOAA/NWS · Open-Meteo Marine API · NOAA Tides & Currents`
+  ];
+
+  return lines.join('\n');
+}
+
+// Build the report HTML
+function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
+  const now = new Date();
+  const hi = getCurrentHourIndex(marine.hourly.time);
+
+  // Current conditions
+  const waveHt = marine.hourly.wave_height[hi];
+  const wavePer = marine.hourly.wave_period[hi];
+  const waveDir = marine.hourly.wave_direction[hi];
+  const swellHt = marine.hourly.swell_wave_height[hi];
+  const swellPer = marine.hourly.swell_wave_period[hi];
+  const swellDir = marine.hourly.swell_wave_direction[hi];
+  const windWaveHt = marine.hourly.wind_wave_height[hi];
+
+  const windSpd = atmos.hourly.wind_speed_10m[hi];
+  const windGst = atmos.hourly.wind_gusts_10m[hi];
+  const windDir = atmos.hourly.wind_direction_10m[hi];
+  const temp = Math.round(atmos.hourly.temperature_2m[hi]);
+  const feelsLike = Math.round(atmos.hourly.apparent_temperature[hi]);
+  const humidity = atmos.hourly.relative_humidity_2m[hi];
+  const vis = atmos.hourly.visibility[hi];
+  const visMi = vis ? (vis / 1609.34).toFixed(1) : 'N/A';
+  const uvi = Math.round(atmos.hourly.uv_index[hi] || 0);
+  const pressure = Math.round(atmos.hourly.pressure_msl[hi]);
+  const wxCode = atmos.hourly.weather_code[hi];
+
+  const swellRisk = getSwellRiskLevel(waveHt);
+  const windRisk = getWindRiskLevel(windSpd);
+  const ripRisk = getRipTideRisk(waveHt, wavePer, 2.5);
+  const uvRisk = getUVRiskLevel(uvi);
+
+  // Water temp — try NOAA gauge first, fall back to Open-Meteo sea surface temp
+  let waterTempStr = '--';
+  let waterTempSource = '';
+
+  if (waterTemp && waterTemp.data && waterTemp.data.length > 0) {
+    // NOAA tide gauge reading — most accurate
+    const latest = waterTemp.data[waterTemp.data.length - 1];
+    const val = parseFloat(latest.v);
+    if (!isNaN(val) && val > 30 && val < 100) { // sanity check °F range
+      waterTempStr = val.toFixed(1) + '°F';
+      waterTempSource = 'NOAA GAUGE';
+    }
+  }
+
+  if (waterTempStr === '--' && sstFallback && sstFallback.hourly) {
+    // Open-Meteo sea surface temperature fallback
+    const hi2 = getCurrentHourIndex(sstFallback.hourly.time);
+    const sst = sstFallback.hourly.sea_surface_temperature?.[hi2];
+    if (sst != null && !isNaN(sst)) {
+      waterTempStr = parseFloat(sst).toFixed(1) + '°F';
+      waterTempSource = 'SEA SURFACE';
+    }
+  }
+
+  // Update header
+  document.getElementById('issue-time').textContent = now.toLocaleTimeString('en-US',
+    {hour:'2-digit',minute:'2-digit',timeZone:'America/Los_Angeles'}) + ' PDT';
+  const validEnd = new Date(now); validEnd.setHours(validEnd.getHours()+12);
+  document.getElementById('valid-period').textContent =
+    now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/Los_Angeles'}) + ' — ' +
+    validEnd.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/Los_Angeles'}) + ' PDT';
+
+  const hour = now.getHours();
+  let cycle = hour < 10 ? 'MORNING CYCLE' : hour < 14 ? 'MIDDAY CYCLE' : hour < 18 ? 'AFTERNOON CYCLE' : 'EVENING CYCLE';
+  document.getElementById('cycle-tag').textContent = cycle;
+
+  // Status bar
+  document.getElementById('status-bar').innerHTML = `<div class="status-bar-inner">
+    <div class="status-item"><div class="status-dot dot-green"></div>
+      <span class="status-label">SEA STATE</span>
+      <span class="status-value">${swellRisk.level}</span></div>
+    <div class="status-item"><div class="status-dot ${swellRisk.level==='LOW'?'dot-green':swellRisk.level==='MODERATE'?'dot-yellow':swellRisk.level==='HIGH'?'dot-orange':'dot-red'}"></div>
+      <span class="status-label">WAVES</span>
+      <span class="status-value">${waveHt ? waveHt.toFixed(1) : '--'} FT</span></div>
+    <div class="status-item"><div class="status-dot ${windRisk.level==='LOW'?'dot-green':windRisk.level==='MODERATE'?'dot-yellow':windRisk.level==='HIGH'?'dot-orange':'dot-red'}"></div>
+      <span class="status-label">WIND</span>
+      <span class="status-value">${Math.round(windSpd)} MPH ${degToCardinal(windDir)}</span></div>
+    <div class="status-item"><div class="status-dot ${ripRisk.level==='LOW'?'dot-green':ripRisk.level==='MODERATE'?'dot-yellow':ripRisk.level==='HIGH'?'dot-orange':'dot-red'}"></div>
+      <span class="status-label">RIP CURRENT</span>
+      <span class="status-value">${ripRisk.level}</span></div>
+    <div class="status-item"><div class="status-dot dot-blue"></div>
+      <span class="status-label">WATER TEMP</span>
+      <span class="status-value">${waterTempStr}</span></div>
+    <div class="status-item"><div class="status-dot dot-yellow"></div>
+      <span class="status-label">UV INDEX</span>
+      <span class="status-value">${uvi} — ${uvRisk.level}</span></div>
+    <div class="status-item"><div class="status-dot dot-blue"></div>
+      <span class="status-label">VISIBILITY</span>
+      <span class="status-value">${visMi} MI</span></div>
+    <div class="status-item"><div class="status-dot dot-green"></div>
+      <span class="status-label">NWS DATA</span>
+      <span class="status-value">${nws ? 'ACTIVE' : 'N/A'}</span></div>
+  </div>`;
+
+  // Alerts section
+  let alertsHTML = '';
+  if (nws && nws.marineAlerts && nws.marineAlerts.length > 0) {
+    alertsHTML = `<div class="fade-in">
+      <div class="section-header">
+        <div class="section-tag">⚠ ACTIVE ALERTS</div>
+        <div class="section-title">NWS Marine & Coastal Alerts</div>
+        <div class="section-line"></div>
+        <button class="alerts-expand-all-btn" onclick="expandAllAlerts(event)">↕ EXPAND ALL</button>
+      </div>
+      <div style="display:grid;gap:8px;" id="alerts-container">`;
+
+    nws.marineAlerts.slice(0,8).forEach((alert, idx) => {
+      const ev = alert.properties.event || '';
+      const isAlert = ev.toLowerCase().includes('warning');
+      const isWarn = ev.toLowerCase().includes('watch') || ev.toLowerCase().includes('advisory');
+      const cls = isAlert ? '' : isWarn ? 'warning' : 'advisory';
+      const alertId = `nws-alert-${idx}`;
+      const isCollapsed = sessionStorage.getItem(alertId) === 'collapsed';
+      const isAcknowledged = sessionStorage.getItem(alertId + '-ack') === 'true';
+      const collapsedClass = isCollapsed ? 'collapsed' : '';
+      const ackClass = isAcknowledged ? 'alert-acknowledged' : '';
+      const btnLabel = isCollapsed ? 'SHOW' : 'HIDE';
+      const desc = (alert.properties.description || '').substring(0, 500);
+      const descFull = alert.properties.description && alert.properties.description.length > 500
+        ? desc + '...' : desc;
+
+      alertsHTML += `<div class="alert-box ${cls} ${collapsedClass} ${ackClass}" id="${alertId}" onclick="toggleAlert(event,'${alertId}')">
+        <div class="alert-toggle-row">
+          <span class="alert-icon">${isAlert ? '🚨' : isWarn ? '⚠️' : 'ℹ️'}</span>
+          <span class="alert-title">${alert.properties.event}</span>
+          <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-left:auto;margin-right:8px;">
+            ${alert.properties.onset ? fmtDateTime(alert.properties.onset) : ''} — ${alert.properties.expires ? fmtDateTime(alert.properties.expires) : ''}
+          </span>
+          <button class="alert-toggle-btn" onclick="toggleAlert(event,'${alertId}')">
+            <span class="alert-chevron">▼</span>
+            <span class="alert-btn-label">${btnLabel}</span>
+          </button>
+        </div>
+        <div class="alert-body-wrap">
+          <div class="alert-body">${descFull}</div>
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="alert-toggle-btn" style="background:rgba(0,0,0,0.1);" onclick="acknowledgeAlert(event,'${alertId}')">
+              ${isAcknowledged ? '✓ ACKNOWLEDGED' : '✓ ACKNOWLEDGE & MINIMIZE'}
+            </button>
+          </div>
+        </div>
+      </div>`;
+    });
+
+    alertsHTML += `</div></div>`;
+  }
+
+  // Hazard overview
+  const hazardCards = [
+    {
+      icon: '🌊', label: 'COMBINED WAVES',
+      value: waveHt ? waveHt.toFixed(1) : '--', unit: 'FEET',
+      status: swellRisk.level, cls: swellRisk.class
+    },
+    {
+      icon: '🔵', label: 'PRIMARY SWELL',
+      value: swellHt ? swellHt.toFixed(1) : '--', unit: `FT @ ${swellPer ? Math.round(swellPer) : '--'}s ${degToCardinal(swellDir)}`,
+      status: getSwellRiskLevel(swellHt || 0).level, cls: getSwellRiskLevel(swellHt || 0).class
+    },
+    {
+      icon: '💨', label: 'SURFACE WIND',
+      value: Math.round(windSpd), unit: `MPH ${degToCardinal(windDir)} / G${Math.round(windGst)}`,
+      status: windRisk.level, cls: windRisk.class
+    },
+    {
+      icon: '〰️', label: 'RIP CURRENT',
+      value: ripRisk.level, unit: `PERIOD: ${wavePer ? Math.round(wavePer) : '--'}s`,
+      status: ripRisk.level, cls: ripRisk.level==='LOW'?'status-low':ripRisk.level==='MODERATE'?'status-moderate':ripRisk.level==='HIGH'?'status-high':'status-extreme'
+    },
+    {
+      icon: '🌡️', label: 'WATER TEMP',
+      value: waterTempStr.replace('°F',''), unit: `°F — ${waterTempSource || 'LA COAST'}`,
+      status: 'MONITOR', cls: 'status-low'
+    },
+    {
+      icon: '☀️', label: 'UV INDEX',
+      value: uvi, unit: uvRisk.level,
+      status: uvRisk.level, cls: uvi>=8?'status-extreme':uvi>=6?'status-high':uvi>=3?'status-moderate':'status-low'
+    }
+  ];
+
+  let hazardHTML = `<div class="hazard-grid fade-in">`;
+  hazardCards.forEach(c => {
+    const valColor = c.cls.includes('extreme') ? 'var(--brand-red)' :
+                     c.cls.includes('high')    ? '#e05c00' :
+                     c.cls.includes('moderate')? '#c49000' :
+                                                 'var(--brand-navy)';
+    hazardHTML += `<div class="hazard-card">
+      <span class="hc-icon">${c.icon}</span>
+      <div class="hc-label">${c.label}</div>
+      <div class="hc-value" style="color:${valColor}">${c.value}</div>
+      <div class="hc-unit">${c.unit}</div>
+      <div class="hc-status ${c.cls}">${c.status}</div>
+    </div>`;
+  });
+  hazardHTML += `</div>`;
+
+  // Build 8-hour hourly forecast
+  let hourlyHTML = `<div class="hourly-grid fade-in-2">`;
+  for (let offset = 0; offset < 8; offset++) {
+    const idx = hi + offset;
+    if (idx >= marine.hourly.time.length) break;
+    const timeStr = new Date(marine.hourly.time[idx]).toLocaleTimeString('en-US',
+      {hour:'2-digit',minute:'2-digit',hour12:true,timeZone:'America/Los_Angeles'});
+    const wh = marine.hourly.wave_height[idx];
+    const wp = marine.hourly.wave_period[idx];
+    const ws = atmos.hourly.wind_speed_10m[idx];
+    const wdDir = atmos.hourly.wind_direction_10m[idx];
+    const wg = atmos.hourly.wind_gusts_10m[idx];
+    const wcolor = wh >= 8 ? '#cc1a1a' : wh >= 5 ? '#e05c00' : wh >= 3 ? '#c49000' : '#002d62';
+
+    hourlyHTML += `<div class="hour-card">
+      <div class="hh-time">${offset===0 ? 'NOW' : timeStr}</div>
+      <div class="hh-wave" style="color:${wcolor}">${wh ? wh.toFixed(1) : '--'}</div>
+      <div class="hh-wave-unit">FT WAVES</div>
+      <div class="hh-period">${wp ? Math.round(wp) : '--'}s period</div>
+      <div class="hh-wind">${windArrow(wdDir)} ${Math.round(ws)} mph<br><span style="color:var(--text-dim)">G ${Math.round(wg)}</span></div>
+    </div>`;
+  }
+  hourlyHTML += `</div>`;
+
+  // Tides
+  let tidesHTML = `<div>`;
+  if (tides && tides.predictions) {
+    tides.predictions.slice(0, 6).forEach(t => {
+      const isHigh = t.type === 'H';
+      const ht = parseFloat(t.v).toFixed(1);
+      const pct = Math.min(100, Math.max(5, ((parseFloat(t.v) + 0.5) / 7) * 100));
+      tidesHTML += `<div class="tide-row">
+        <div class="tide-type ${isHigh ? 'tide-high' : 'tide-low'}">${isHigh ? 'HIGH' : 'LOW'}</div>
+        <div>
+          <div class="tide-time">${t.t.split(' ')[1]}</div>
+          <div class="tide-progress"><div class="tide-fill" style="width:${pct}%"></div></div>
+        </div>
+        <div></div>
+        <div class="tide-height">${ht}<span> ft MLLW</span></div>
+      </div>`;
+    });
+  } else {
+    tidesHTML += `<div class="error-note">Tide data unavailable — contact NOAA CO-OPS</div>`;
+  }
+  tidesHTML += `</div>`;
+
+  // Atmospheric details
+  const atmosRows = [
+    ['Air Temperature', `${temp}°F`, 'feels like ' + feelsLike + '°F'],
+    ['Relative Humidity', humidity + '%', humidity > 80 ? 'fog potential elevated' : 'normal'],
+    ['Wind Speed', `${Math.round(windSpd)} mph`, degToCardinal(windDir)],
+    ['Wind Gusts', `${Math.round(windGst)} mph`, 'peak'],
+    ['Barometric Pressure', `${pressure} hPa`, pressure < 1008 ? 'FALLING — instability' : 'STEADY'],
+    ['Visibility', `${visMi} mi`, visMi < 1 ? 'DENSE FOG' : visMi < 3 ? 'REDUCED' : 'GOOD'],
+    ['Sky Condition', getWMODescription(wxCode), ''],
+    ['UV Index', `${uvi}`, uvRisk.level],
+  ];
+
+  let atmosHTML = `<table class="data-table">
+    <thead><tr><th>PARAMETER</th><th>VALUE</th><th>NOTE</th></tr></thead>
+    <tbody>`;
+  atmosRows.forEach(r => {
+    const isWarn = r[2].includes('FALLING') || r[2].includes('FOG') || r[2].includes('REDUCED');
+    atmosHTML += `<tr>
+      <td>${r[0]}</td>
+      <td class="val">${r[1]}</td>
+      <td class="${isWarn ? 'warn-val' : ''}">${r[2]}</td>
+    </tr>`;
+  });
+  atmosHTML += `</tbody></table>`;
+
+  // Marine details
+  const marineRows = [
+    ['Combined Wave Height', waveHt ? waveHt.toFixed(1) + ' ft' : '--', swellRisk.level],
+    ['Primary Swell Height', swellHt ? swellHt.toFixed(1) + ' ft' : '--', ''],
+    ['Swell Direction', degToCardinal(swellDir) + ' (' + Math.round(swellDir||0) + '°)', 'from'],
+    ['Swell Period', swellPer ? Math.round(swellPer) + ' sec' : '--', swellPer > 14 ? 'LONG PERIOD — rip hazard ↑' : 'normal'],
+    ['Wind Wave Height', windWaveHt ? windWaveHt.toFixed(1) + ' ft' : '--', 'local chop'],
+    ['Wave Period', wavePer ? Math.round(wavePer) + ' sec' : '--', ''],
+    ['Wave Direction', degToCardinal(waveDir) + ' (' + Math.round(waveDir||0) + '°)', ''],
+    ['Daily Max Wave', marine.daily.wave_height_max[0] ? marine.daily.wave_height_max[0].toFixed(1) + ' ft' : '--', 'expected peak'],
+    ['Daily Max Swell', marine.daily.swell_wave_height_max[0] ? marine.daily.swell_wave_height_max[0].toFixed(1) + ' ft' : '--', 'expected peak'],
+  ];
+
+  let marineHTML = `<table class="data-table">
+    <thead><tr><th>PARAMETER</th><th>VALUE</th><th>NOTE</th></tr></thead>
+    <tbody>`;
+  marineRows.forEach(r => {
+    const isWarn = r[2].includes('LONG PERIOD') || r[2].includes('HIGH') || r[2].includes('EXTREME');
+    marineHTML += `<tr>
+      <td>${r[0]}</td>
+      <td class="val ${isWarn ? 'warn-val' : 'highlight'}">${r[1]}</td>
+      <td class="${isWarn ? 'warn-val' : ''}">${r[2]}</td>
+    </tr>`;
+  });
+  marineHTML += `</tbody></table>`;
+
+  // Beach zone assessments — linked to PATROL_ZONES
+  let zonesHTML = `<div class="beach-zones fade-in-3">`;
+  PATROL_ZONES.forEach(bz => {
+    const risk = getSwellRiskLevel(waveHt || 0);
+    const rColor = risk.level==='LOW' ? 'var(--green)' : risk.level==='MODERATE' ? '#c49000' : risk.level==='HIGH' ? '#e05c00' : 'var(--brand-red)';
+    zonesHTML += `<div class="beach-zone" data-zone-id="${bz.id}" onclick="selectZone('${bz.id}')" style="cursor:pointer">
+      <div class="bz-name">${bz.name}</div>
+      <div class="bz-stat"><span class="bz-key">BOUNDS</span><span class="bz-val" style="font-size:10px">${bz.bounds.substring(0,30)}${bz.bounds.length>30?'…':''}</span></div>
+      <div class="bz-stat"><span class="bz-key">WAVES</span><span class="bz-val" style="color:${rColor}">${waveHt ? waveHt.toFixed(1) : '--'} FT</span></div>
+      <div class="bz-stat"><span class="bz-key">SWELL</span><span class="bz-val">${degToCardinal(swellDir)}</span></div>
+      <div class="bz-stat"><span class="bz-key">WIND</span><span class="bz-val">${Math.round(windSpd)} MPH ${degToCardinal(windDir)}</span></div>
+      <div class="bz-rating"><div class="bz-rating-text" style="color:${rColor}">${risk.level} HAZARD</div></div>
+      <div style="font-size:10px;color:var(--brand-red);margin-top:6px;font-weight:700;font-family:var(--font-title);letter-spacing:0.5px;text-transform:uppercase">TAP FOR ZONE REPORT →</div>
+    </div>`;
+  });
+  zonesHTML += `</div>`;
+
+  // Narrative
+  const narrative = generateNarrative(marine, atmos, tides, nws);
+
+  // NWS text forecast
+  let nwsText = '';
+  if (nws && nws.forecastData && nws.forecastData.properties && nws.forecastData.properties.periods) {
+    const periods = nws.forecastData.properties.periods.slice(0,6);
+    nwsText = `<table class="data-table fade-in-4">
+      <thead><tr><th>PERIOD</th><th>TEMP</th><th>WIND</th><th>CONDITIONS</th></tr></thead>
+      <tbody>`;
+    periods.forEach(p => {
+      nwsText += `<tr>
+        <td style="font-weight:bold;color:var(--text-bright)">${p.name}</td>
+        <td class="val">${p.temperature}°${p.temperatureUnit}</td>
+        <td>${p.windSpeed || '--'} ${p.windDirection || ''}</td>
+        <td>${p.shortForecast}</td>
+      </tr>`;
+    });
+    nwsText += `</tbody></table>`;
+  } else {
+    nwsText = `<div class="error-note">NWS point forecast data unavailable for this location.</div>`;
+  }
+
+  // Daily outlook table
+  const days = ['TODAY', 'TOMORROW', 'DAY 3'];
+  let dailyHTML = `<table class="data-table fade-in-4">
+    <thead><tr><th>DAY</th><th>MAX WAVE</th><th>MAX SWELL</th><th>SWELL DIR</th><th>WIND MAX</th><th>UV MAX</th><th>PRECIP</th></tr></thead>
+    <tbody>`;
+  days.forEach((d, i) => {
+    if (i >= marine.daily.time.length) return;
+    const mxW = marine.daily.wave_height_max[i];
+    const mxS = marine.daily.swell_wave_height_max[i];
+    const sdDir = marine.daily.swell_wave_direction_dominant[i];
+    const mxWind = atmos.daily.wind_speed_10m_max[i];
+    const mxUV = atmos.daily.uv_index_max[i];
+    const prec = atmos.daily.precipitation_sum[i];
+    const dayRisk = getSwellRiskLevel(mxW || 0);
+    const rColor = dayRisk.level==='LOW'?'var(--green)':dayRisk.level==='MODERATE'?'#c49000':dayRisk.level==='HIGH'?'#e05c00':'var(--brand-red)';
+    dailyHTML += `<tr>
+      <td style="font-family:var(--cond);font-weight:700;font-size:13px;letter-spacing:1px;color:var(--text-bright)">${d}</td>
+      <td class="val" style="color:${rColor}">${mxW ? mxW.toFixed(1) : '--'} ft</td>
+      <td style="color:#00aaff">${mxS ? mxS.toFixed(1) : '--'} ft</td>
+      <td>${degToCardinal(sdDir)}</td>
+      <td>${mxWind ? Math.round(mxWind) : '--'} mph</td>
+      <td style="color:${mxUV>=8?'var(--brand-red)':mxUV>=6?'#e05c00':mxUV>=3?'#c49000':'#00cc88'}">${mxUV ? Math.round(mxUV) : '--'}</td>
+      <td>${prec ? prec.toFixed(2) + '"' : '0.00"'}</td>
+    </tr>`;
+  });
+  dailyHTML += `</tbody></table>`;
+
+  // Surfline section — built async, placeholder here, replaced after load
+  const surflineNote = `<div id="surfline-section"><div class="loading-state" style="padding:24px"><div class="loading-bar"><div class="loading-fill"></div></div><div style="margin-top:8px">FETCHING SURFLINE DATA...</div></div></div>`;
+
+  // WaveCast section — built async, placeholder here, replaced after load
+  const waveCastNote = `<div id="wavecast-section"><div class="loading-state" style="padding:24px"><div class="loading-bar"><div class="loading-fill"></div></div><div style="margin-top:8px">FETCHING WAVECAST SOCAL FORECAST...</div></div></div>`;
+
+  // Sunrise/Sunset
+  let sunHTML = '';
+  if (atmos.daily.sunrise && atmos.daily.sunset) {
+    const sr = new Date(atmos.daily.sunrise[0]);
+    const ss = new Date(atmos.daily.sunset[0]);
+    const srStr = sr.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/Los_Angeles'});
+    const ssStr = ss.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/Los_Angeles'});
+    sunHTML = `<div class="panel fade-in-4" style="display:flex;gap:32px;align-items:center;justify-content:center;padding:16px">
+      <div style="text-align:center">
+        <div style="font-size:28px">🌅</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-top:4px">SUNRISE</div>
+        <div style="font-family:var(--cond);font-size:22px;font-weight:700;color:var(--gold)">${srStr}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim)">PDT</div>
+      </div>
+      <div style="width:1px;height:60px;background:var(--border)"></div>
+      <div style="text-align:center">
+        <div style="font-size:28px">🌇</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-top:4px">SUNSET</div>
+        <div style="font-family:var(--cond);font-size:22px;font-weight:700;color:var(--orange)">${ssStr}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim)">PDT</div>
+      </div>
+      <div style="width:1px;height:60px;background:var(--border)"></div>
+      <div style="text-align:center">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px">OPERATIONAL WINDOW</div>
+        <div style="font-family:var(--cond);font-size:16px;font-weight:700;color:var(--text-bright)">${srStr} – ${ssStr}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:4px">Daylight lifeguard operations</div>
+      </div>
+    </div>`;
+  }
+
+  // Helper: build a collapsible section wrapper
+  function makeSection(id, tag, title, content, extraMeta='', startCollapsed=false) {
+    const collapsed = sessionStorage.getItem('sec-' + id) === 'collapsed' ? 'sec-collapsed' : (startCollapsed ? 'sec-collapsed' : '');
+    const lblText = collapsed ? 'EXPAND' : 'COLLAPSE';
+    return `<div class="collapsible-section ${collapsed}" id="${id}">
+      <div class="section-header" style="cursor:pointer" onclick="toggleSection('${id}')">
+        <div class="section-tag">${tag}</div>
+        <div class="section-title">${title}</div>
+        <div class="section-line"></div>
+        ${extraMeta ? `<div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);white-space:nowrap">${extraMeta}</div>` : ''}
+        <button class="section-toggle-btn" onclick="event.stopPropagation();toggleSection('${id}')">
+          <span class="tog-chevron">▼</span>
+          <span class="tog-label">${lblText}</span>
+        </button>
+      </div>
+      <div class="section-body">${content}</div>
+    </div>`;
+  }
+
+  // Assemble final report
+  const html = `
+    <!-- ZONE DRILLDOWN (populated when a zone is selected) -->
+    <div id="zone-drilldown"></div>
+
+    <!-- ★ UNIFIED BRIEFING — ALL SOURCES ★ -->
+    <div id="unified-briefing"></div>
+
+    ${alertsHTML ? `
+    <div class="collapsible-section ${sessionStorage.getItem('sec-alerts') === 'collapsed' ? 'sec-collapsed' : ''}" id="sec-alerts">
+      <div class="section-header" style="cursor:pointer" onclick="toggleSection('sec-alerts')">
+        <div class="section-tag">⚠ ALERTS</div>
+        <div class="section-title">NWS Marine & Coastal Alerts</div>
+        <div class="section-line"></div>
+        <button class="alerts-expand-all-btn" onclick="event.stopPropagation();expandAllAlerts(event)">↕ EXPAND ALL</button>
+        <button class="section-toggle-btn" onclick="event.stopPropagation();toggleSection('sec-alerts')" style="margin-left:6px">
+          <span class="tog-chevron">▼</span>
+          <span class="tog-label">${sessionStorage.getItem('sec-alerts') === 'collapsed' ? 'EXPAND' : 'COLLAPSE'}</span>
+        </button>
+      </div>
+      <div class="section-body">
+        <div style="display:grid;gap:8px;" id="alerts-container">
+          ${alertsHTML.replace(/^.*<div style="display:grid.*?" id="alerts-container">/s,'').replace(/<\/div><\/div>$/,'')}
+        </div>
+      </div>
+    </div><div style="height:4px"></div>` : ''}
+
+    ${makeSection('sec-01','01','Hazard Overview — Current Conditions',
+      hazardHTML,
+      `AS OF ${now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/Los_Angeles'})} PDT`)}
+
+    ${makeSection('sec-02','02','Operational Narrative &amp; Synopsis',
+      `<div class="narrative-box"><div class="nar-header">MARINE PREDICTIVE SERVICES — NARRATIVE FORECAST</div>${narrative}</div>`)}
+
+    ${makeSection('sec-03','03','8-Hour Hourly Sea State Forecast',
+      hourlyHTML, 'SRC: OPEN-METEO MARINE')}
+
+    ${makeSection('sec-04','04','Marine &amp; Atmospheric Parameters',
+      `<div class="two-col">
+        <div>
+          <div class="section-header"><div class="section-tag">04A</div><div class="section-title">Marine Parameters</div><div class="section-line"></div></div>
+          <div class="panel">${marineHTML}<div class="source-note">SOURCE: OPEN-METEO MARINE API · CDIP BUOYS</div></div>
+        </div>
+        <div>
+          <div class="section-header"><div class="section-tag">04B</div><div class="section-title">Atmospheric Conditions</div><div class="section-line"></div></div>
+          <div class="panel">${atmosHTML}<div class="source-note">SOURCE: OPEN-METEO · NOAA/NWS LOS ANGELES</div></div>
+        </div>
+      </div>`)}
+
+    ${makeSection('sec-05','05','Tidal Predictions &amp; Solar Data',
+      `<div class="two-col">
+        <div>
+          <div class="section-header"><div class="section-tag">05A</div><div class="section-title">Tidal Predictions — LA Harbor</div><div class="section-line"></div></div>
+          <div class="panel">${tidesHTML}<div class="source-note">NOAA TIDES &amp; CURRENTS · DATUM: MLLW</div></div>
+        </div>
+        <div>
+          <div class="section-header"><div class="section-tag">05B</div><div class="section-title">Operational Day / Solar Data</div><div class="section-line"></div></div>
+          ${sunHTML}
+        </div>
+      </div>`, 'NOAA STA. 9410660')}
+
+    ${makeSection('sec-06','06','NWS Point Forecast — Coastal LA',
+      `<div class="panel">${nwsText}<div class="source-note">NATIONAL WEATHER SERVICE · LOS ANGELES OFFICE</div></div>`,
+      'SRC: API.WEATHER.GOV')}
+
+    ${makeSection('sec-07','07','3-Day Marine Outlook',
+      `<div class="panel">${dailyHTML}<div class="source-note">SOURCE: OPEN-METEO MARINE · GLOBAL WAVE MODEL</div></div>`)}
+
+    ${makeSection('sec-08','08','Beach Zone Assessments — LA County', zonesHTML)}
+
+    ${makeSection('sec-09','09','Surfline Spot Conditions',
+      surflineNote, 'SURFLINE.COM · SUBSCRIPTION')}
+
+    ${makeSection('sec-10','10','WaveCast SoCal Forecast',
+      waveCastNote, 'WAVECAST.COM · SUN/TUE/THU')}
+  `;
+
+  document.getElementById('main-content').innerHTML = html;
+
+  // Build unified briefing with immediately-available data
+  buildUnifiedBriefing(nws, marine, atmos, tides, waterTempStr, swellRisk, windRisk, ripRisk, uvRisk,
+    waveHt, wavePer, waveDir, swellHt, swellPer, swellDir,
+    windSpd, windGst, windDir, temp, uvi, visMi, pressure, humidity);
+}
+
+// ============================================================
+// SURFLINE HYBRID INTEGRATION
+// Unofficial API endpoints (reverse-engineered from surfline.com)
+// + Live cam links for visual confirmation
+// ============================================================
+
+// Key LA County spots with Surfline spot IDs
+const SURFLINE_SPOTS = [
+  {
+    name: 'Zuma Beach',
+    region: 'N. Malibu',
+    id: '584204214e65fad6a7709c6f',
+    camId: null,
+    camName: 'Zuma Beach',
+    url: 'https://www.surfline.com/surf-report/zuma-beach/5afb6566bb6fd9001a250fbb'
+  },
+  {
+    name: 'Malibu — 1st Point',
+    region: 'Malibu',
+    id: '584204214e65fad6a7709b9f',
+    camId: null,
+    camName: 'Malibu Point',
+    url: 'https://www.surfline.com/surf-report/malibu-first-point/584204214e65fad6a7709b9f'
+  },
+  {
+    name: 'Santa Monica Pier',
+    region: 'Santa Monica Bay',
+    id: '584204214e65fad6a7709bdf',
+    camId: null,
+    camName: null,
+    url: 'https://www.surfline.com/surf-report/santa-monica-beach/584204214e65fad6a7709bdf'
+  },
+  {
+    name: 'Venice Beach',
+    region: 'Santa Monica Bay S.',
+    id: '584204214e65fad6a7709bdb',
+    camId: null,
+    camName: 'Venice Beach',
+    url: 'https://www.surfline.com/surf-report/venice-beach/5842041f4e65fad6a7708819'
+  },
+  {
+    name: 'El Porto',
+    region: 'Manhattan Beach',
+    id: '584204214e65fad6a7709c07',
+    camId: null,
+    camName: 'El Porto',
+    url: 'https://www.surfline.com/surf-report/el-porto/5842041f4e65fad6a7708906'
+  },
+  {
+    name: 'Manhattan Beach Pier',
+    region: 'South Bay',
+    id: '584204214e65fad6a7709c09',
+    camId: null,
+    camName: 'Manhattan Beach',
+    url: 'https://www.surfline.com/surf-report/manhattan-beach-pier/584204214e65fad6a7709c09'
+  },
+  {
+    name: 'Hermosa Beach',
+    region: 'South Bay',
+    id: '584204214e65fad6a7709c0b',
+    camId: null,
+    camName: null,
+    url: 'https://www.surfline.com/surf-report/hermosa-beach-pier/5b17281e4a274e001a11fcc3'
+  },
+  {
+    name: 'Redondo Beach',
+    region: 'South Bay',
+    id: '584204214e65fad6a7709c0d',
+    camId: null,
+    camName: null,
+    url: 'https://www.surfline.com/surf-report/sapphire-st-/584204214e65fad6a7709d0b'
+  }
+];
+
+// Cam spots — URLs verified from your Surfline subscription
+// Click-throughs use the correct spot IDs confirmed by user
+// ============================================================
+// SURFLINE WIDGET EMBEDS
+// Uses Surfline's official iframe embed format — works with
+// your paid subscription, no API/CORS issues.
+// Spot IDs verified by user. Each widget shows the full
+// forecast (waves, wind, tide, cams) for that spot.
+// ============================================================
+
+// All LA County spots with verified IDs and embed-ready URLs
+// ============================================================
+// SURFLINE — PROXY-POWERED DATA CARDS
+// Calls /.netlify/functions/surfline?spotId=XXX which runs
+// server-side (no CORS). Returns wave, rating, conditions,
+// wind data displayed as rich per-spot cards.
+// ============================================================
+
+const SURFLINE_SPOTS_DATA = [
+  { name: 'Zuma Beach',           region: 'N. Malibu',        spotId: '5afb6566bb6fd9001a250fbb', url: 'https://www.surfline.com/surf-report/zuma-beach/5afb6566bb6fd9001a250fbb',                       cam: true },
+  { name: 'Malibu — 1st Point',   region: 'Malibu',           spotId: '584204214e65fad6a7709b9f', url: 'https://www.surfline.com/surf-report/malibu-first-point/584204214e65fad6a7709b9f',               cam: true },
+  { name: 'Santa Monica Beach',   region: 'Santa Monica Bay', spotId: '584204214e65fad6a7709bdf', url: 'https://www.surfline.com/surf-report/santa-monica-beach/584204214e65fad6a7709bdf',             cam: false },
+  { name: 'Venice Beach',         region: 'SM Bay S.',        spotId: '5842041f4e65fad6a7708819', url: 'https://www.surfline.com/surf-report/venice-beach/5842041f4e65fad6a7708819',                   cam: true },
+  { name: 'El Porto',             region: 'Manhattan Beach',  spotId: '5842041f4e65fad6a7708906', url: 'https://www.surfline.com/surf-report/el-porto/5842041f4e65fad6a7708906',                       cam: true },
+  { name: 'Manhattan Beach Pier', region: 'South Bay',        spotId: '584204214e65fad6a7709c09', url: 'https://www.surfline.com/surf-report/manhattan-beach-pier/584204214e65fad6a7709c09',           cam: false },
+  { name: 'Hermosa Beach Pier',   region: 'South Bay',        spotId: '5b17281e4a274e001a11fcc3', url: 'https://www.surfline.com/surf-report/hermosa-beach-pier/5b17281e4a274e001a11fcc3',             cam: true },
+  { name: 'Redondo — Sapphire',   region: 'South Bay',        spotId: '584204214e65fad6a7709d0b', url: 'https://www.surfline.com/surf-report/sapphire-st-/584204214e65fad6a7709d0b',                   cam: true },
+];
+
+const SL_RATINGS = {
+  0: { label: 'FLAT',       color: '#8899aa', bg: 'rgba(136,153,170,0.12)' },
+  1: { label: 'VERY POOR',  color: '#8899aa', bg: 'rgba(136,153,170,0.12)' },
+  2: { label: 'POOR',       color: '#7a9ab0', bg: 'rgba(122,154,176,0.12)' },
+  3: { label: 'POOR-FAIR',  color: '#a08040', bg: 'rgba(160,128,64,0.12)'  },
+  4: { label: 'FAIR',       color: '#c49000', bg: 'rgba(196,144,0,0.12)'   },
+  5: { label: 'FAIR-GOOD',  color: '#0d7a4e', bg: 'rgba(13,122,78,0.12)'   },
+  6: { label: 'GOOD',       color: '#0d7a4e', bg: 'rgba(13,122,78,0.15)'   },
+  7: { label: 'VERY GOOD',  color: '#007a9e', bg: 'rgba(0,122,158,0.12)'   },
+  8: { label: 'EPIC',       color: '#002d62', bg: 'rgba(0,45,98,0.12)'     },
+};
+
+function slRatingInfo(val) {
+  return SL_RATINGS[Math.min(8, Math.max(0, Math.round(val || 0)))] || SL_RATINGS[0];
+}
+
+async function fetchSurflineViaProxy(spotId) {
+  try {
+    const resp = await fetch(`/.netlify/functions/surfline?spotId=${spotId}`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    return await resp.json();
+  } catch(e) {
+    console.warn(`Surfline proxy failed for ${spotId}:`, e.message);
+    return null;
+  }
+}
+
+function parseSurflineData(data) {
+  if (!data || data.error) return null;
+  try {
+    const { waveData, ratingData, condData, windData } = data;
+    const now = Date.now() / 1000;
+
+    const closest = (arr) => arr && arr.length
+      ? arr.reduce((p, c) => Math.abs(c.timestamp - now) < Math.abs(p.timestamp - now) ? c : p)
+      : null;
+
+    const wave   = closest(waveData?.data?.wave);
+    const rating = closest(ratingData?.data?.rating);
+    const wind   = closest(windData?.data?.wind);
+    const cond   = condData?.data?.conditions?.[0] || null;
+
+    // Find best swell (highest energy)
+    const swells = wave?.swells?.filter(s => s.height > 0) || [];
+    swells.sort((a, b) => (b.height * b.period) - (a.height * a.period));
+    const primarySwell  = swells[0] || null;
+    const secondarySwell = swells[1] || null;
+
+    return {
+      waveMin:       wave?.surf?.min   ?? null,
+      waveMax:       wave?.surf?.max   ?? null,
+      wavePlus:      wave?.surf?.plus  ?? false,
+      humanRelation: wave?.surf?.humanRelation ?? '',
+      ratingVal:     rating?.rating?.value ?? 0,
+      ratingKey:     rating?.rating?.key   ?? 'FLAT',
+      primarySwell,
+      secondarySwell,
+      windSpeed:     wind?.speed     ?? null,
+      windDir:       wind?.direction ?? null,
+      windDirType:   wind?.directionType ?? '',  // ONSHORE / OFFSHORE / CROSS-SHORE
+      windOptimal:   wind?.optimalScore ?? null,
+      amForecast:    cond?.am?.observation ?? '',
+      pmForecast:    cond?.pm?.observation ?? '',
+      amRating:      cond?.am?.rating ?? null,
+      pmRating:      cond?.pm?.rating ?? null,
+    };
+  } catch(e) {
+    console.warn('Surfline parse error:', e);
+    return null;
+  }
+}
+
+function windTypeLabel(type) {
+  const t = (type || '').toUpperCase();
+  if (t.includes('OFFSHORE')) return { label: '↗ OFFSHORE', color: 'var(--green)', note: 'Clean conditions' };
+  if (t.includes('ONSHORE'))  return { label: '↙ ONSHORE',  color: 'var(--brand-red)', note: 'Choppy surface' };
+  if (t.includes('CROSS'))    return { label: '→ CROSS-SHORE', color: '#c49000', note: 'Side chop' };
+  return { label: type || '--', color: 'var(--text-dim)', note: '' };
+}
+
+function buildSurflineCard(spot, parsed) {
+  // Card for failed/unavailable data
+  if (!parsed) {
+    return `
+      <div class="sl-card sl-card-unavail">
+        <div class="sl-card-header">
+          <div class="sl-card-name">${spot.name}</div>
+          <div class="sl-card-region">${spot.region}</div>
+        </div>
+        <div class="sl-card-body" style="text-align:center;padding:20px 12px">
+          <div style="font-size:24px;margin-bottom:8px">🌊</div>
+          <div style="font-family:var(--font-title);font-size:12px;font-weight:700;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase">Data Unavailable</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:4px">Proxy may still be deploying</div>
+          <a href="${spot.url}" target="_blank" class="sl-card-fullbtn" style="margin-top:12px">View on Surfline ↗</a>
+        </div>
+      </div>`;
+  }
+
+  const rt = slRatingInfo(parsed.ratingVal);
+  const wt = windTypeLabel(parsed.windDirType);
+  const waveRange = parsed.waveMin !== null
+    ? `${parsed.waveMin}-${parsed.waveMax}${parsed.wavePlus ? '+' : ''}`
+    : '--';
+
+  // Swell direction arrows
+  const swellArrow = (dir) => {
+    if (dir == null) return '';
+    const d = degToCardinal(dir);
+    const arrows = { N:'↓',NNE:'↙',NE:'↙',ENE:'←',E:'←',ESE:'←',SE:'↖',SSE:'↑',S:'↑',SSW:'↗',SW:'↗',WSW:'→',W:'→',WNW:'→',NW:'↘',NNW:'↓' };
+    return arrows[d] || '';
+  };
+
+  return `
+    <div class="sl-card">
+      <!-- Rating stripe at top -->
+      <div class="sl-card-stripe" style="background:${rt.color}"></div>
+
+      <!-- Header -->
+      <div class="sl-card-header">
+        <div>
+          <div class="sl-card-name">${spot.name}</div>
+          <div class="sl-card-region">${spot.region}</div>
+        </div>
+        <div class="sl-card-rating-pill" style="color:${rt.color};background:${rt.bg}">
+          ${rt.label}
+        </div>
+      </div>
+
+      <div class="sl-card-body">
+
+        <!-- Wave height — big display -->
+        <div class="sl-card-wave-row">
+          <div>
+            <div class="sl-card-wave-ht" style="color:${rt.color}">${waveRange}</div>
+            <div class="sl-card-wave-unit">ft surf</div>
+          </div>
+          ${parsed.humanRelation ? `<div class="sl-card-human">${parsed.humanRelation}</div>` : ''}
+        </div>
+
+        <!-- Swells -->
+        <div class="sl-card-section-label">SWELL</div>
+        <div class="sl-card-swell-wrap">
+          ${parsed.primarySwell ? `
+            <div class="sl-card-swell primary">
+              <span class="sl-swell-tag">PRIMARY</span>
+              <span class="sl-swell-ht">${parsed.primarySwell.height.toFixed(1)}ft</span>
+              <span class="sl-swell-per">@ ${Math.round(parsed.primarySwell.period)}s</span>
+              <span class="sl-swell-dir">${swellArrow(parsed.primarySwell.direction)} ${degToCardinal(parsed.primarySwell.direction)}</span>
+            </div>` : '<div class="sl-card-swell">No swell data</div>'}
+          ${parsed.secondarySwell ? `
+            <div class="sl-card-swell secondary">
+              <span class="sl-swell-tag">SECONDARY</span>
+              <span class="sl-swell-ht">${parsed.secondarySwell.height.toFixed(1)}ft</span>
+              <span class="sl-swell-per">@ ${Math.round(parsed.secondarySwell.period)}s</span>
+              <span class="sl-swell-dir">${swellArrow(parsed.secondarySwell.direction)} ${degToCardinal(parsed.secondarySwell.direction)}</span>
+            </div>` : ''}
+        </div>
+
+        <!-- Wind -->
+        <div class="sl-card-section-label">WIND</div>
+        <div class="sl-card-wind-row">
+          <span class="sl-wind-type" style="color:${wt.color}">${wt.label}</span>
+          <span class="sl-wind-spd">${parsed.windSpeed !== null ? Math.round(parsed.windSpeed) + ' mph' : '--'}</span>
+          ${wt.note ? `<span class="sl-wind-note">${wt.note}</span>` : ''}
+        </div>
+
+        <!-- AM/PM conditions -->
+        ${parsed.amForecast || parsed.pmForecast ? `
+          <div class="sl-card-section-label">CONDITIONS</div>
+          <div class="sl-card-cond">
+            ${parsed.amForecast ? `<div><strong>AM:</strong> ${parsed.amForecast}</div>` : ''}
+            ${parsed.pmForecast ? `<div><strong>PM:</strong> ${parsed.pmForecast}</div>` : ''}
+          </div>` : ''}
+
+      </div>
+
+      <!-- Footer buttons -->
+      <div class="sl-card-footer">
+        <a href="${spot.url}" target="_blank" class="sl-card-fullbtn">
+          📊 Full Report ↗
+        </a>
+        ${spot.cam ? `<a href="${spot.url}" target="_blank" class="sl-card-cambtn">
+          <span class="blink">●</span> Live Cam
+        </a>` : ''}
+      </div>
+    </div>`;
+}
+
+async function loadSurflineSection() {
+  const el = document.getElementById('surfline-section');
+  if (!el) return;
+
+  const now = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', timeZone:'America/Los_Angeles'});
+
+  // Show loading state
+  el.innerHTML = `
+    <div class="sl-card-grid">
+      ${SURFLINE_SPOTS_DATA.map(s => `
+        <div class="sl-card sl-card-loading">
+          <div class="sl-card-stripe" style="background:var(--border)"></div>
+          <div class="sl-card-header">
+            <div class="sl-card-name">${s.name}</div>
+            <div class="sl-card-region">${s.region}</div>
+          </div>
+          <div class="sl-card-body" style="padding:20px 12px;text-align:center">
+            <div class="loading-bar" style="margin:0 auto"><div class="loading-fill"></div></div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+
+  // Fetch all spots in parallel via proxy
+  const results = await Promise.all(
+    SURFLINE_SPOTS_DATA.map(s => fetchSurflineViaProxy(s.spotId))
+  );
+  const parsed = results.map(r => parseSurflineData(r));
+  const successCount = parsed.filter(p => p !== null).length;
+
+  // Update the unified briefing Surfline subsection
+  window._surflineSpotsData = SURFLINE_SPOTS_DATA;
+  updateUBSurfline(parsed);
+
+  el.innerHTML = `
+    <div class="sl-top-bar">
+      <div>
+        <span style="font-family:var(--font-title);font-size:11px;font-weight:700;color:var(--brand-gold);letter-spacing:1.5px;text-transform:uppercase">Surfline.com · Paid Subscription</span>
+        <span style="font-family:var(--mono);font-size:10px;color:rgba(212,186,107,0.6);margin-left:10px">via proxy · ${now} PDT</span>
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:${successCount > 0 ? '#00cc88' : '#e05c00'}">
+        ${successCount > 0 ? `● ${successCount}/${SURFLINE_SPOTS_DATA.length} spots live` : '⚠ Proxy not responding'}
+      </div>
+    </div>
+    <div class="sl-card-grid">
+      ${SURFLINE_SPOTS_DATA.map((s, i) => buildSurflineCard(s, parsed[i])).join('')}
+    </div>
+    ${successCount === 0 ? `
+      <div style="background:var(--brand-red-bg);border:1px solid rgba(237,26,59,0.2);border-left:4px solid var(--brand-red);border-radius:6px;padding:14px 16px;margin-top:10px;font-size:13px;color:var(--text)">
+        <strong style="font-family:var(--font-title);font-size:14px;color:var(--brand-red-dark)">Proxy Not Responding</strong><br>
+        Make sure you've deployed the <code>netlify/functions/surfline.js</code> file to your Netlify site. See the setup instructions below.
+      </div>` : ''}
+    <div class="sl-api-note" style="margin-top:10px">
+      DATA: SURFLINE.COM · PROXY: /.netlify/functions/surfline · SUBSCRIPTION REQUIRED
+    </div>`;
+}
+
+// ============================================================
+// WAVECAST SOCAL FORECAST INTEGRATION
+// Fetches the WaveCast forecast page via a Netlify proxy function.
+// Published most Sundays, Tuesdays, and Thursdays.
+// ============================================================
+
+async function loadWaveCastSection() {
+  const el = document.getElementById('wavecast-section');
+  if (!el) return;
+
+  // Days WaveCast typically publishes (0=Sun, 2=Tue, 4=Thu)
+  const publishDays = [0, 2, 4];
+  const today = new Date().getDay();
+  const isPublishDay = publishDays.includes(today);
+
+  const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const nextPublish = (() => {
+    for (let i = 1; i <= 7; i++) {
+      if (publishDays.includes((today + i) % 7)) return dayNames[(today + i) % 7];
+    }
+    return 'soon';
+  })();
+
+  try {
+    const res = await fetch('/.netlify/functions/wavecast');
+
+    if (!res.ok) throw new Error(`Proxy returned ${res.status}`);
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    const fetchTime = new Date(data.fetched).toLocaleString('en-US', {
+      weekday: 'short', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit', timeZone: 'America/Los_Angeles'
+    });
+
+    // Format the text: split into paragraphs, highlight section headers
+    const lines = data.text.split('\n').filter(l => l.trim());
+    const formattedLines = lines.map(line => {
+      const t = line.trim();
+      if (t.startsWith('■ ') || t.startsWith('▸ ')) {
+        // Section header
+        return `<div style="font-family:var(--font-title);font-size:15px;font-weight:800;color:var(--brand-navy);letter-spacing:1px;text-transform:uppercase;margin:18px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--border)">${t.replace(/^[■▸] /, '')}</div>`;
+      } else if (t.startsWith('────')) {
+        return `<hr style="border:none;border-top:1px solid var(--border);margin:12px 0">`;
+      } else if (t.startsWith('  •')) {
+        return `<div style="padding-left:16px;margin:2px 0;color:var(--text)">${t}</div>`;
+      } else if (t.length > 0) {
+        return `<p style="margin:6px 0;line-height:1.6;color:var(--text);font-size:14px">${t}</p>`;
+      }
+      return '';
+    }).join('');
+
+    // Update unified briefing WaveCast subsection
+    updateUBWaveCast(data);
+
+    el.innerHTML = `
+      <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        <div style="background:var(--brand-navy);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div>
+            <span style="font-family:var(--font-title);font-size:13px;font-weight:800;color:var(--brand-gold);letter-spacing:1.5px;text-transform:uppercase">WaveCast SoCal · Professional Surf Forecast</span>
+            <span style="font-family:var(--mono);font-size:10px;color:rgba(212,186,107,0.6);margin-left:10px">via proxy · ${fetchTime} PT</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-family:var(--mono);font-size:10px;color:${isPublishDay ? '#00cc88' : 'rgba(212,186,107,0.6)'}">
+              ${isPublishDay ? '● PUBLISH DAY' : `Next: ${nextPublish}`}
+            </span>
+            <a href="https://wavecast.com/socal/" target="_blank"
+               style="font-family:var(--font-title);font-size:11px;font-weight:700;color:var(--brand-navy);background:var(--brand-gold);padding:4px 10px;border-radius:4px;text-decoration:none;letter-spacing:0.5px">
+              FULL REPORT ↗
+            </a>
+          </div>
+        </div>
+        <div style="padding:16px 18px;background:#fff;max-height:600px;overflow-y:auto">
+          <div style="font-family:var(--font-title);font-size:20px;font-weight:900;color:var(--brand-red);letter-spacing:0.5px;margin-bottom:12px">${data.title}</div>
+          <div style="font-family:var(--font-body);">${formattedLines}</div>
+        </div>
+        <div style="background:var(--bg-card);padding:8px 16px;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase">
+          SOURCE: WAVECAST.COM/SOCAL · PROXY: /.NETLIFY/FUNCTIONS/WAVECAST · PUBLISHES SUN/TUE/THU
+        </div>
+      </div>`;
+
+    updateUBWaveCast(data);
+  } catch(e) {
+    updateUBWaveCast(null);
+    el.innerHTML = `
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-left:4px solid var(--brand-navy);border-radius:6px;padding:16px 18px">
+        <div style="font-family:var(--font-title);font-size:14px;font-weight:800;color:var(--brand-navy);letter-spacing:1px;margin-bottom:8px">⚠ WAVECAST PROXY NOT RESPONDING</div>
+        <p style="font-size:13px;color:var(--text);margin:0 0 12px">The WaveCast proxy function needs to be deployed to Netlify alongside the <code>surfline.js</code> function.</p>
+        <a href="https://wavecast.com/socal/" target="_blank"
+           style="display:inline-block;font-family:var(--font-title);font-size:12px;font-weight:700;color:#fff;background:var(--brand-navy);padding:8px 16px;border-radius:5px;text-decoration:none;letter-spacing:1px">
+          VIEW WAVECAST DIRECTLY ↗
+        </a>
+      </div>`;
+  }
+}
+
+// ============================================================
+// ALERT COLLAPSE / ACKNOWLEDGE FUNCTIONS
+// State stored in sessionStorage — resets on page refresh (alerts
+// always start expanded on a fresh load, as required)
+// ============================================================
+
+function toggleAlert(event, alertId) {
+  // Don't double-fire if clicking the acknowledge button
+  if (event.target.closest('.alert-toggle-btn') &&
+      event.target.closest('.alert-body-wrap')) return;
+  event.stopPropagation();
+
+  const box = document.getElementById(alertId);
+  if (!box) return;
+
+  const isNowCollapsed = !box.classList.contains('collapsed');
+  box.classList.toggle('collapsed', isNowCollapsed);
+
+  // Update button label
+  const btnLabel = box.querySelector('.alert-btn-label');
+  if (btnLabel) btnLabel.textContent = isNowCollapsed ? 'SHOW' : 'HIDE';
+
+  // Persist state for this session
+  sessionStorage.setItem(alertId, isNowCollapsed ? 'collapsed' : 'expanded');
+}
+
+function acknowledgeAlert(event, alertId) {
+  event.stopPropagation();
+
+  const box = document.getElementById(alertId);
+  if (!box) return;
+
+  // Mark as acknowledged visually
+  box.classList.add('alert-acknowledged', 'collapsed');
+  const btnLabel = box.querySelector('.alert-btn-label');
+  if (btnLabel) btnLabel.textContent = 'SHOW';
+
+  // Update the ack button text
+  const ackBtn = event.target.closest('button');
+  if (ackBtn) ackBtn.textContent = '✓ ACKNOWLEDGED';
+
+  // Persist both collapsed and acknowledged state
+  sessionStorage.setItem(alertId, 'collapsed');
+  sessionStorage.setItem(alertId + '-ack', 'true');
+}
+
+function expandAllAlerts(event) {
+  event.stopPropagation();
+
+  document.querySelectorAll('.alert-box').forEach((box, idx) => {
+    const alertId = box.id || `nws-alert-${idx}`;
+    box.classList.remove('collapsed', 'alert-acknowledged');
+    const btnLabel = box.querySelector('.alert-btn-label');
+    if (btnLabel) btnLabel.textContent = 'HIDE';
+    const ackBtn = box.querySelector('.alert-body-wrap button');
+    if (ackBtn) ackBtn.textContent = '✓ ACKNOWLEDGE & MINIMIZE';
+    sessionStorage.removeItem(alertId);
+    sessionStorage.removeItem(alertId + '-ack');
+  });
+
+  // Update expand-all button text
+  const btn = event.target.closest('button');
+  if (btn) {
+    btn.textContent = '↕ EXPAND ALL';
+  }
+}
+
+// ============================================================
+// COLLAPSIBLE SECTIONS
+// ============================================================
+
+function toggleSection(sectionId) {
+  const sec = document.getElementById(sectionId);
+  if (!sec) return;
+  const isNowCollapsed = !sec.classList.contains('sec-collapsed');
+  sec.classList.toggle('sec-collapsed', isNowCollapsed);
+  const lbl = sec.querySelector('.tog-label');
+  if (lbl) lbl.textContent = isNowCollapsed ? 'EXPAND' : 'COLLAPSE';
+  sessionStorage.setItem('sec-' + sectionId, isNowCollapsed ? 'collapsed' : 'expanded');
+}
+
+function restoreSectionStates() {
+  document.querySelectorAll('.collapsible-section').forEach(sec => {
+    const state = sessionStorage.getItem('sec-' + sec.id);
+    if (state === 'collapsed') {
+      sec.classList.add('sec-collapsed');
+      const lbl = sec.querySelector('.tog-label');
+      if (lbl) lbl.textContent = 'EXPAND';
+    }
+  });
+}
+
+// ============================================================
+// UNIFIED BRIEFING BUILDER
+// Aggregates NOAA/Open-Meteo data immediately, updates
+// Surfline and WaveCast subsections when their async data arrives
+// ============================================================
+
+// Shared state so async loaders can update the unified briefing
+window._ubSurflineData = null;
+window._ubWaveCastData = null;
+
+function buildUnifiedBriefing(nws, marine, atmos, tides, waterTempStr, swellRisk, windRisk, ripRisk, uvRisk,
+                               waveHt, wavePer, waveDir, swellHt, swellPer, swellDir,
+                               windSpd, windGst, windDir, temp, uvi, visMi, pressure, humidity) {
+  const el = document.getElementById('unified-briefing');
+  if (!el) return;
+
+  const now = new Date();
+  const timeStr = now.toLocaleString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit', timeZone: 'America/Los_Angeles'
+  });
+
+  // Risk color helper
+  function riskColor(level) {
+    return level === 'EXTREME' ? '#ff3355' : level === 'HIGH' ? '#ff7722' :
+           level === 'MODERATE' ? '#f0b800' : '#00cc88';
+  }
+  function riskBg(level) {
+    return level === 'EXTREME' ? 'rgba(255,51,85,0.2)' : level === 'HIGH' ? 'rgba(255,119,34,0.2)' :
+           level === 'MODERATE' ? 'rgba(240,184,0,0.2)' : 'rgba(0,204,136,0.15)';
+  }
+
+  // Alerts block
+  const alerts = (nws && nws.marineAlerts) ? nws.marineAlerts : [];
+  let alertsHTML = '';
+  if (alerts.length === 0) {
+    alertsHTML = `<div class="ub-noalert">✓ NO ACTIVE MARINE/COASTAL ALERTS</div>`;
+  } else {
+    alertsHTML = alerts.slice(0, 5).map(a =>
+      `<div class="ub-alert-banner">⚠ ${a.properties.event}${a.properties.expires ? ' · EXPIRES ' + fmtDateTime(a.properties.expires) : ''}</div>`
+    ).join('');
+  }
+
+  // Determine offshore/onshore/cross relative to ~270° (general coast facing west)
+  const windType = (() => {
+    const d = windDir % 360;
+    if (d >= 45 && d <= 200) return { label: 'OFFSHORE', color: '#00cc88' };
+    if (d >= 200 && d <= 315) return { label: 'ONSHORE', color: '#ff7722' };
+    return { label: 'CROSS-SHORE', color: '#f0b800' };
+  })();
+
+  // Tide status
+  let tideStatus = '--';
+  let nextTideStr = '--';
+  if (tides && tides.predictions && tides.predictions.length > 0) {
+    const next = tides.predictions[0];
+    const nextH = next.type === 'H' ? 'HIGH' : 'LOW';
+    tideStatus = nextH + ' ' + parseFloat(next.v).toFixed(1) + ' ft';
+    nextTideStr = 'NEXT ' + nextH + ': ' + next.t.split(' ')[1];
+  }
+
+  // 3-day outlook rows
+  const days = ['TODAY', 'TMW', 'DAY 3'];
+  const outlookRows = days.map((d, i) => {
+    if (!marine.daily || i >= marine.daily.time.length) return '';
+    const mxW = marine.daily.wave_height_max[i];
+    const mxS = marine.daily.swell_wave_height_max[i];
+    const sdDir = marine.daily.swell_wave_direction_dominant[i];
+    const mxWind = atmos.daily.wind_speed_10m_max[i];
+    const mxUV = atmos.daily.uv_index_max[i];
+    const dr = getSwellRiskLevel(mxW || 0);
+    return `<tr>
+      <td style="font-family:var(--font-title);font-weight:800;color:var(--brand-gold);letter-spacing:1px">${d}</td>
+      <td style="color:${riskColor(dr.level)}">${mxW ? mxW.toFixed(1) : '--'} ft</td>
+      <td style="color:#88ccff">${mxS ? mxS.toFixed(1) : '--'} ft</td>
+      <td>${degToCardinal(sdDir)}</td>
+      <td>${mxWind ? Math.round(mxWind) : '--'} mph</td>
+      <td style="color:${mxUV >= 8 ? '#ff3355' : mxUV >= 6 ? '#ff7722' : mxUV >= 3 ? '#f0b800' : '#00cc88'}">${mxUV ? Math.round(mxUV) : '--'}</td>
+      <td><span class="ub-cell-badge" style="background:${riskBg(dr.level)};color:${riskColor(dr.level)}">${dr.level}</span></td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="ub-block">
+      <div class="ub-masthead">
+        <div>
+          <div class="ub-masthead-title">⚓ OPERATIONAL BRIEFING — ALL SOURCES</div>
+          <div class="ub-masthead-sub">LA COUNTY FIRE DEPT · LIFEGUARD DIVISION · MARINE PREDICTIVE SERVICES</div>
+        </div>
+        <div class="ub-masthead-time">ISSUED: ${timeStr} PDT<br>
+          <span style="font-size:9px;color:rgba(212,186,107,0.5)">AUTO-REFRESH: 15 MIN</span>
+        </div>
+      </div>
+      <div class="ub-body">
+
+        <!-- ACTIVE ALERTS -->
+        <div class="ub-row">
+          <div class="ub-row-label">⚠ Active NWS Marine &amp; Coastal Alerts</div>
+          ${alertsHTML}
+        </div>
+
+        <!-- CURRENT CONDITIONS -->
+        <div class="ub-row">
+          <div class="ub-row-label">🌊 Current Marine Conditions · NOAA / Open-Meteo</div>
+          <div class="ub-conditions-grid">
+            <div class="ub-cell">
+              <div class="ub-cell-label">Combined Waves</div>
+              <div class="ub-cell-value" style="color:${riskColor(swellRisk.level)}">${waveHt ? waveHt.toFixed(1) : '--'}</div>
+              <div class="ub-cell-unit">FEET · ${swellRisk.level} HAZARD</div>
+              <div class="ub-cell-badge" style="background:${riskBg(swellRisk.level)};color:${riskColor(swellRisk.level)}">${swellRisk.level}</div>
+            </div>
+            <div class="ub-cell">
+              <div class="ub-cell-label">Primary Swell</div>
+              <div class="ub-cell-value">${swellHt ? swellHt.toFixed(1) : '--'}</div>
+              <div class="ub-cell-unit">FT · ${swellPer ? Math.round(swellPer) : '--'}s · ${degToCardinal(swellDir)}</div>
+            </div>
+            <div class="ub-cell">
+              <div class="ub-cell-label">Wind Waves</div>
+              <div class="ub-cell-value">${marine.hourly.wind_wave_height ? marine.hourly.wind_wave_height[getCurrentHourIndex(marine.hourly.time)]?.toFixed(1) : '--'}</div>
+              <div class="ub-cell-unit">FT LOCAL CHOP</div>
+            </div>
+            <div class="ub-cell">
+              <div class="ub-cell-label">Rip Current Risk</div>
+              <div class="ub-cell-value" style="font-size:14px;color:${riskColor(ripRisk.level)}">${ripRisk.level}</div>
+              <div class="ub-cell-unit">PERIOD: ${wavePer ? Math.round(wavePer) : '--'}s</div>
+            </div>
+            <div class="ub-cell">
+              <div class="ub-cell-label">Surface Wind</div>
+              <div class="ub-cell-value" style="font-size:16px">${Math.round(windSpd)}</div>
+              <div class="ub-cell-unit">MPH ${degToCardinal(windDir)} / G${Math.round(windGst)}</div>
+              <div class="ub-cell-badge" style="background:${riskBg(windType.label==='OFFSHORE'?'LOW':windType.label==='ONSHORE'?'HIGH':'MODERATE')};color:${windType.color}">${windType.label}</div>
+            </div>
+            <div class="ub-cell">
+              <div class="ub-cell-label">Water Temp</div>
+              <div class="ub-cell-value" style="font-size:18px">${waterTempStr}</div>
+              <div class="ub-cell-unit">NOAA GAUGE</div>
+            </div>
+            <div class="ub-cell">
+              <div class="ub-cell-label">Air Temp</div>
+              <div class="ub-cell-value" style="font-size:18px">${temp}°F</div>
+              <div class="ub-cell-unit">UV INDEX: ${uvi} · ${uvRisk.level}</div>
+            </div>
+            <div class="ub-cell">
+              <div class="ub-cell-label">Visibility</div>
+              <div class="ub-cell-value" style="font-size:18px">${visMi}</div>
+              <div class="ub-cell-unit">MILES · ${pressure} hPa</div>
+            </div>
+            <div class="ub-cell">
+              <div class="ub-cell-label">Tide Status</div>
+              <div class="ub-cell-value" style="font-size:14px">${tideStatus}</div>
+              <div class="ub-cell-unit">${nextTideStr}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3-DAY OUTLOOK -->
+        <div class="ub-row">
+          <div class="ub-row-label">📅 3-Day Marine Outlook · Open-Meteo Global Wave Model</div>
+          <div style="overflow-x:auto">
+            <table class="ub-outlook-table">
+              <thead><tr>
+                <th>DAY</th><th>MAX WAVE</th><th>MAX SWELL</th><th>SWELL DIR</th><th>WIND MAX</th><th>UV MAX</th><th>HAZARD</th>
+              </tr></thead>
+              <tbody>${outlookRows}</tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SURFLINE SPOT SUMMARY (populated async) -->
+        <div class="ub-row" id="ub-surfline-row">
+          <div class="ub-row-label">🏄 Surfline Spot Conditions · surfline.com</div>
+          <div class="ub-loading" id="ub-surfline-content">
+            <div class="loading-bar" style="width:120px"><div class="loading-fill"></div></div>
+            <span>Fetching Surfline data...</span>
+          </div>
+        </div>
+
+        <!-- WAVECAST FORECAST (populated async) -->
+        <div class="ub-row" id="ub-wavecast-row">
+          <div class="ub-row-label">📡 WaveCast SoCal Forecast · wavecast.com · Sun/Tue/Thu</div>
+          <div class="ub-loading" id="ub-wavecast-content">
+            <div class="loading-bar" style="width:120px"><div class="loading-fill"></div></div>
+            <span>Fetching WaveCast forecast...</span>
+          </div>
+        </div>
+
+      </div>
+      <div class="ub-source-bar">
+        <span>NOAA/NWS API.WEATHER.GOV</span>
+        <span>OPEN-METEO MARINE API</span>
+        <span>NOAA TIDES &amp; CURRENTS STA.9410660</span>
+        <span>SURFLINE.COM VIA PROXY</span>
+        <span>WAVECAST.COM/SOCAL VIA PROXY</span>
+      </div>
+    </div>`;
+}
+
+// Update unified briefing Surfline subsection after async load
+function updateUBSurfline(parsedSpots) {
+  const el = document.getElementById('ub-surfline-content');
+  if (!el) return;
+  if (!parsedSpots || parsedSpots.every(p => p === null)) {
+    el.innerHTML = `<span style="color:rgba(255,255,255,0.4)">Surfline proxy not responding — <a href="https://www.surfline.com" target="_blank" style="color:var(--brand-gold)">view directly ↗</a></span>`;
+    return;
+  }
+  const SURFLINE_SPOTS_DATA_LOCAL = window._surflineSpotsData || [];
+  el.outerHTML = `<div id="ub-surfline-content">
+    ${SURFLINE_SPOTS_DATA_LOCAL.map((s, i) => {
+      const p = parsedSpots[i];
+      if (!p) return `<div class="ub-spot-row"><div class="ub-spot-name">${s.name}</div><span class="ub-spot-pill" style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.4)">NO DATA</span></div>`;
+      const ratingColors = { 'FLAT':'#aaa','POOR':'#e05c00','POOR TO FAIR':'#c49000','FAIR':'#c49000','FAIR TO GOOD':'#00aa66','GOOD':'#00cc88','GOOD TO EPIC':'#00eeff','EPIC':'#ff44ff' };
+      const rc = ratingColors[p.rating?.toUpperCase()] || '#aaa';
+      const wt = p.windType || 'N/A';
+      const wtColor = wt === 'Offshore' ? '#00cc88' : wt === 'Onshore' ? '#ff7722' : '#f0b800';
+      return `<div class="ub-spot-row">
+        <div class="ub-spot-name">${s.name}</div>
+        <span class="ub-spot-pill" style="background:rgba(255,255,255,0.08);color:#fff">${p.waveMin || '--'}–${p.waveMax || '--'} ft</span>
+        <span class="ub-spot-pill" style="background:${rc}22;color:${rc}">${p.rating || '--'}</span>
+        <span class="ub-spot-pill" style="background:${wtColor}22;color:${wtColor}">${wt}</span>
+        <span style="font-family:var(--mono);font-size:10px;color:rgba(255,255,255,0.4)">${p.swellHt || '--'}ft @ ${p.swellPeriod || '--'}s ${p.swellDir || ''}</span>
+        <a href="${s.url}" target="_blank" style="font-family:var(--mono);font-size:10px;color:var(--brand-gold);margin-left:auto">↗</a>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+// Update unified briefing WaveCast subsection after async load
+function updateUBWaveCast(data) {
+  const el = document.getElementById('ub-wavecast-content');
+  if (!el) return;
+  if (!data || data.error) {
+    el.innerHTML = `<span style="color:rgba(255,255,255,0.4)">WaveCast proxy not responding — <a href="https://wavecast.com/socal/" target="_blank" style="color:var(--brand-gold)">view directly ↗</a></span>`;
+    return;
+  }
+  // Show first ~600 chars of the forecast as a teaser in the unified view
+  const preview = data.text ? data.text.replace(/\n{2,}/g, '\n').split('\n')
+    .filter(l => l.trim() && !l.startsWith('■') && !l.startsWith('▸') && !l.startsWith('───'))
+    .slice(0, 6).join(' ').substring(0, 700) : '';
+  const fetchDay = data.fetched ? new Date(data.fetched).toLocaleDateString('en-US',
+    { weekday:'short', month:'short', day:'numeric', timeZone:'America/Los_Angeles' }) : '';
+  el.outerHTML = `<div id="ub-wavecast-content">
+    <div style="font-family:var(--mono);font-size:9px;color:var(--brand-gold);margin-bottom:8px;letter-spacing:1px">
+      ${data.title || 'WaveCast SoCal'} · ${fetchDay}
+    </div>
+    <div class="ub-wc-text"><p>${preview}${data.text && data.text.length > 700 ? '…' : ''}</p></div>
+    <a href="https://wavecast.com/socal/" target="_blank"
+       style="display:inline-block;margin-top:10px;font-family:var(--font-title);font-size:11px;font-weight:700;color:var(--brand-navy);background:var(--brand-gold);padding:5px 12px;border-radius:4px;text-decoration:none;letter-spacing:1px">
+      READ FULL WAVECAST REPORT ↗
+    </a>
+  </div>`;
+}
+
+// Main init
+async function initReport() {
+  document.getElementById('main-content').innerHTML = `
+    <div class="loading-state">
+      <div style="font-size:24px;margin-bottom:12px;">🌊</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--brand-navy)">ACQUIRING NOAA · NWS · OPEN-METEO MARINE DATA</div>
+      <div class="loading-bar"><div class="loading-fill"></div></div>
+      <div style="margin-top:8px;font-size:10px;color:var(--text-dim);">Contacting api.weather.gov · open-meteo.com · tidesandcurrents.noaa.gov · services.surfline.com</div>
+    </div>`;
+
+  document.getElementById('status-bar').innerHTML = `<div class="status-bar-inner">
+    <div class="status-item">
+      <div class="status-dot dot-blue blink"></div>
+      <span class="status-label">FETCHING DATA</span>
+      <span class="status-value">Please wait...</span>
+    </div>
+  </div>`;
+
+  try {
+    const [nws, marine, atmos, tides, waterTemp, sstFallback] = await Promise.all([
+      fetchNWSForecast(),
+      fetchOpenMeteoMarine(),
+      fetchOpenMeteoAtmos(),
+      fetchNOAATides(),
+      fetchNOAAWaterTemp(),
+      fetchOpenMeteoSST()
+    ]);
+
+    if (!marine || !atmos) {
+      document.getElementById('main-content').innerHTML = `
+        <div class="loading-state">
+          <div style="font-size:24px;margin-bottom:12px;color:var(--brand-red)">⚠</div>
+          <div style="color:var(--brand-red)">UNABLE TO FETCH MARINE DATA</div>
+          <div style="margin-top:12px;color:var(--text-dim);font-size:12px">Check network connection and try again.</div>
+          <div style="margin-top:16px"><button class="refresh-btn" onclick="initReport()">⟳ RETRY</button></div>
+        </div>`;
+      return;
+    }
+
+    buildReport(nws, marine, atmos, tides, waterTemp, sstFallback);
+    // Initialize zone selector chips
+    initZoneSelector();
+    // If a zone was previously active, re-select it
+    if (activeZoneId) {
+      const prevZone = activeZoneId;
+      activeZoneId = null; // reset so selectZone runs fresh
+      selectZone(prevZone);
+    }
+    // Load Surfline async after main report is rendered
+    loadSurflineSection();
+    // Load WaveCast forecast async after main report is rendered
+    loadWaveCastSection();
+  } catch(err) {
+    console.error("Report init error:", err);
+    document.getElementById('main-content').innerHTML = `
+      <div class="loading-state">
+        <div style="font-size:24px;margin-bottom:12px;color:var(--brand-red)">⚠</div>
+        <div style="color:var(--brand-red)">DATA ACQUISITION ERROR</div>
+        <div style="margin-top:8px;color:var(--text-dim);font-size:12px">${err.message}</div>
+        <div style="margin-top:16px"><button class="refresh-btn" onclick="initReport()">⟳ RETRY</button></div>
+      </div>`;
+  }
+}
+
+// Auto-refresh every 15 minutes
+setInterval(initReport, 15 * 60 * 1000);
+
+// Init on load
+initZoneSelector();
+initReport();
+</script>
+</body>
+</html>
