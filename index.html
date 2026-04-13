@@ -162,6 +162,88 @@
 
   .header-meta { flex-shrink: 0; text-align: right; }
 
+  /* ── Mobile header ticker ── */
+  .header-ticker { display: none; }
+
+  @media (max-width: 600px) {
+    .header-meta { display: none !important; }
+
+    .header-ticker {
+      display: flex;
+      align-items: center;
+      background: rgba(0,0,0,0.28);
+      border-top: 1px solid rgba(212,186,107,0.25);
+      overflow: hidden;
+      width: 100%;
+      position: relative;
+    }
+
+    .header-ticker-track {
+      display: inline-flex;
+      align-items: center;
+      white-space: nowrap;
+      padding: 5px 16px;
+      gap: 10px;
+      animation: tkscroll 24s linear infinite;
+    }
+
+    /* pause on hover/touch */
+    .header-ticker:hover .header-ticker-track,
+    .header-ticker:active .header-ticker-track { animation-play-state: paused; }
+
+    .tk-item {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      color: rgba(255,255,255,0.5);
+      letter-spacing: 0.3px;
+    }
+    .tk-item span {
+      color: var(--brand-gold);
+      font-weight: 700;
+    }
+    .tk-sep {
+      color: rgba(212,186,107,0.4);
+      font-family: var(--mono);
+      font-size: 9px;
+    }
+    .tk-badge {
+      display: inline-block;
+      border: 1px solid rgba(212,186,107,0.6);
+      border-radius: 2px;
+      padding: 1px 5px;
+      font-family: var(--font-title);
+      font-size: 8px;
+      font-weight: 700;
+      color: var(--brand-gold);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      background: rgba(212,186,107,0.1);
+    }
+    .tk-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--font-title);
+      font-size: 9px;
+      font-weight: 700;
+      color: #6effc8;
+      letter-spacing: 0.5px;
+    }
+    .tk-live-dot {
+      width: 5px;
+      height: 5px;
+      background: #6effc8;
+      border-radius: 50%;
+      animation: blink 1s infinite;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    @keyframes tkscroll {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+  }
+
   .issue-time {
     font-family: var(--mono);
     font-size: 10px;
@@ -1803,6 +1885,27 @@
       </div>
     </div>
   </div>
+  <!-- Mobile-only ticker strip (hidden on desktop via CSS) -->
+  <div class="header-ticker" aria-hidden="true">
+    <div class="header-ticker-track">
+      <span class="tk-item">ISSUED: <span id="ticker-issue-time">--:-- PDT</span></span>
+      <span class="tk-sep">·</span>
+      <span class="tk-item">VALID: <span id="ticker-valid-period">Loading…</span></span>
+      <span class="tk-sep">·</span>
+      <span id="ticker-cycle-tag" class="tk-badge">MORNING CYCLE</span>
+      <span class="tk-sep">·</span>
+      <span class="tk-live"><span class="tk-live-dot"></span>LIVE</span>
+      <!-- duplicate set for seamless loop -->
+      <span class="tk-sep" style="margin-left:24px">·</span>
+      <span class="tk-item">ISSUED: <span id="ticker-issue-time-2">--:-- PDT</span></span>
+      <span class="tk-sep">·</span>
+      <span class="tk-item">VALID: <span id="ticker-valid-period-2">Loading…</span></span>
+      <span class="tk-sep">·</span>
+      <span id="ticker-cycle-tag-2" class="tk-badge">MORNING CYCLE</span>
+      <span class="tk-sep">·</span>
+      <span class="tk-live"><span class="tk-live-dot"></span>LIVE</span>
+    </div>
+  </div>
 </div>
 
 <!-- STATUS BAR -->
@@ -2686,16 +2789,30 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
   }
 
   // Update header
-  document.getElementById('issue-time').textContent = now.toLocaleTimeString('en-US',
+  const issuedStr = now.toLocaleTimeString('en-US',
     {hour:'2-digit',minute:'2-digit',timeZone:'America/Los_Angeles'}) + ' PDT';
+  document.getElementById('issue-time').textContent = issuedStr;
+
   const validEnd = new Date(now); validEnd.setHours(validEnd.getHours()+12);
-  document.getElementById('valid-period').textContent =
+  const validStr =
     now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/Los_Angeles'}) + ' — ' +
     validEnd.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/Los_Angeles'}) + ' PDT';
+  document.getElementById('valid-period').textContent = validStr;
 
   const hour = now.getHours();
   let cycle = hour < 10 ? 'MORNING CYCLE' : hour < 14 ? 'MIDDAY CYCLE' : hour < 18 ? 'AFTERNOON CYCLE' : 'EVENING CYCLE';
   document.getElementById('cycle-tag').textContent = cycle;
+
+  // Mirror values to mobile ticker strip
+  ['ticker-issue-time','ticker-issue-time-2'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.textContent = issuedStr;
+  });
+  ['ticker-valid-period','ticker-valid-period-2'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.textContent = validStr;
+  });
+  ['ticker-cycle-tag','ticker-cycle-tag-2'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.textContent = cycle;
+  });
 
   // Status bar
   document.getElementById('status-bar').innerHTML = `<div class="status-bar-inner">
@@ -3531,8 +3648,33 @@ async function loadWaveCastSection() {
       hour: '2-digit', minute: '2-digit', timeZone: 'America/Los_Angeles'
     });
 
+    // Strip WaveCast boilerplate before rendering — catches it whether the
+    // server-side proxy filtered it or not
+    let cleanText = data.text || '';
+
+    // If the nav block is present, chop everything up to and including the
+    // subscribe notice — "At a glance" or the first long sentence follows
+    const cutMarkers = [
+      'Get notified when this report is updated.',
+      'Get notified when this report is updated',
+      'Subscribe to be notified:',
+    ];
+    for (const marker of cutMarkers) {
+      const idx = cleanText.indexOf(marker);
+      if (idx !== -1) {
+        cleanText = cleanText.slice(idx + marker.length).trim();
+        break;
+      }
+    }
+
+    // Also strip any remaining "Surf Charts for SoCal … Sunset Cliffs" block
+    cleanText = cleanText
+      .replace(/Surf Charts for SoCal[\s\S]*?Sunset Cliffs/gi, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+
     // Format the text: split into paragraphs, highlight section headers
-    const lines = data.text.split('\n').filter(l => l.trim());
+    const lines = cleanText.split('\n').filter(l => l.trim());
     const formattedLines = lines.map(line => {
       const t = line.trim();
       if (t.startsWith('■ ') || t.startsWith('▸ ')) {
@@ -3918,8 +4060,16 @@ function updateUBWaveCast(data) {
     el.innerHTML = `<span style="color:rgba(255,255,255,0.4)">WaveCast proxy not responding — <a href="https://wavecast.com/socal/" target="_blank" style="color:var(--brand-gold)">view directly ↗</a></span>`;
     return;
   }
-  // Show first ~600 chars of the forecast as a teaser in the unified view
-  const preview = data.text ? data.text.replace(/\n{2,}/g, '\n').split('\n')
+  // Strip boilerplate then build teaser for unified briefing
+  let ubWcText = data.text || '';
+  const ubCutMarkers = ['Get notified when this report is updated.', 'Get notified when this report is updated', 'Subscribe to be notified:'];
+  for (const m of ubCutMarkers) {
+    const idx = ubWcText.indexOf(m);
+    if (idx !== -1) { ubWcText = ubWcText.slice(idx + m.length).trim(); break; }
+  }
+  ubWcText = ubWcText.replace(/Surf Charts for SoCal[\s\S]*?Sunset Cliffs/gi, '').trim();
+
+  const preview = ubWcText ? ubWcText.replace(/\n{2,}/g, '\n').split('\n')
     .filter(l => l.trim() && !l.startsWith('■') && !l.startsWith('▸') && !l.startsWith('───'))
     .slice(0, 6).join(' ').substring(0, 700) : '';
   const fetchDay = data.fetched ? new Date(data.fetched).toLocaleDateString('en-US',

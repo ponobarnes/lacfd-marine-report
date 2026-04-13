@@ -116,28 +116,26 @@ function extractContent(html) {
     .replace(/\n{4,}/g, '\n\n\n')
     .trim();
 
-  // Strip known WaveCast boilerplate blocks that appear before the actual forecast:
-  // - Surf Charts nav links
-  // - Subscribe/notification prompt
-  const boilerplatePatterns = [
-    /Surf Charts for SoCal[\s\S]*?Get notified when this report is updated\.?/i,
-    /Subscribe to be notified:[\s\S]*?Get notified when this report is updated\.?/i,
-    /Rincon\s*\|[\s\S]*?Sunset Cliffs/i,
-    /Get notified when this report is updated\.?/i,
+  // Strip WaveCast nav/subscribe boilerplate that appears before the actual forecast.
+  // Strategy: find the subscribe notice and keep only what follows it.
+  const cutMarkers = [
+    'Get notified when this report is updated.',
+    'Get notified when this report is updated',
+    'Subscribe to be notified:',
   ];
-  for (const pattern of boilerplatePatterns) {
-    text = text.replace(pattern, '').trim();
+  for (const marker of cutMarkers) {
+    const idx = text.indexOf(marker);
+    if (idx !== -1) {
+      text = text.slice(idx + marker.length).trim();
+      break;
+    }
   }
 
-  // Remove any leading lines that look like nav links (short lines with | separators)
-  const lines = text.split('\n');
-  const firstRealLine = lines.findIndex(l => {
-    const t = l.trim();
-    return t.length > 60 && !t.includes('|');
-  });
-  if (firstRealLine > 0 && firstRealLine < 15) {
-    text = lines.slice(firstRealLine).join('\n').trim();
-  }
+  // Belt-and-suspenders: remove any leftover surf-chart nav block
+  text = text
+    .replace(/Surf Charts for SoCal[\s\S]*?Sunset Cliffs/gi, '')
+    .replace(/\n{4,}/g, '\n\n\n')
+    .trim();
 
   return text;
 }
