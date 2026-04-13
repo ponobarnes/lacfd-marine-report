@@ -2010,7 +2010,7 @@ const PATROL_ZONES = [
     shortName: 'Manhattan',
     bounds: '1st St Manhattan to El Segundo Jetty',
     lat: 33.8838, lon: -118.4103,
-    surflineUrl: 'https://www.surfline.com/surf-report/manhattan-beach-pier/584204214e65fad6a7709c09',
+    surflineUrl: 'https://www.surfline.com/surf-report/manhattan-beach-pier/5842041f4e65fad6a7708907',
     notes: 'El Porto is the most exposed section; strong shore break and rip channels. Pier creates rip. Sand bars shift seasonally.',
     hazards: ['El Porto shore break', 'Shifting sandbars', 'Pier rip channel', 'Strong longshore drift']
   },
@@ -3409,7 +3409,7 @@ const SURFLINE_SPOTS_DATA = [
   { name: 'Santa Monica Beach',  region: 'Santa Monica Bay', spotId: '584204214e65fad6a7709bdf', url: 'https://www.surfline.com/surf-report/santa-monica-beach/584204214e65fad6a7709bdf' },
   { name: 'Venice Beach',        region: 'SM Bay S.',        spotId: '5842041f4e65fad6a7708819', url: 'https://www.surfline.com/surf-report/venice-beach/5842041f4e65fad6a7708819' },
   { name: 'El Porto',            region: 'Manhattan Beach',  spotId: '5842041f4e65fad6a7708906', url: 'https://www.surfline.com/surf-report/el-porto/5842041f4e65fad6a7708906' },
-  { name: 'Manhattan Beach Pier',region: 'South Bay',        spotId: '584204214e65fad6a7709c09', url: 'https://www.surfline.com/surf-report/manhattan-beach-pier/584204214e65fad6a7709c09' },
+  { name: 'Manhattan Beach Pier',region: 'South Bay',        spotId: '5842041f4e65fad6a7708907', url: 'https://www.surfline.com/surf-report/manhattan-beach-pier/5842041f4e65fad6a7708907' },
   { name: 'Hermosa Beach Pier',  region: 'South Bay',        spotId: '5b17281e4a274e001a11fcc3', url: 'https://www.surfline.com/surf-report/hermosa-beach-pier/5b17281e4a274e001a11fcc3' },
   { name: 'Redondo — Sapphire',  region: 'South Bay',        spotId: '584204214e65fad6a7709d0b', url: 'https://www.surfline.com/surf-report/sapphire-st-/584204214e65fad6a7709d0b' },
 ];
@@ -3963,10 +3963,11 @@ function buildUnifiedBriefing(nws, marine, atmos, tides, waterTempStr, swellRisk
           <div class="ub-row-label">🌊 Current Marine Conditions · NOAA / Open-Meteo</div>
           <div class="ub-conditions-grid">
             <div class="ub-cell">
-              <div class="ub-cell-label">Combined Waves</div>
+              <div class="ub-cell-label">Combined Seas</div>
               <div class="ub-cell-value" style="color:${riskColor(swellRisk.level)}">${waveHt ? waveHt.toFixed(1) : '--'}</div>
-              <div class="ub-cell-unit">FEET · ${swellRisk.level} HAZARD</div>
+              <div class="ub-cell-unit">FEET OFFSHORE · ${swellRisk.level}</div>
               <div class="ub-cell-badge" style="background:${riskBg(swellRisk.level)};color:${riskColor(swellRisk.level)}">${swellRisk.level}</div>
+              <div id="ub-surf-range" style="font-family:var(--mono);font-size:9px;color:rgba(255,255,255,0.35);margin-top:5px;letter-spacing:0.3px">SURF: — · loading Surfline…</div>
             </div>
             <div class="ub-cell">
               <div class="ub-cell-label">Primary Swell</div>
@@ -4064,6 +4065,29 @@ function updateUBSurfline(parsedSpots) {
     const lbl = row.querySelector('.ub-row-label');
     if (lbl) lbl.textContent = '🏄 Surfline Spot Conditions · surfline.com (edge proxy)';
   }
+
+  // ── Inject Surfline surf range into Combined Seas cell ──────────────────
+  // Surfline gives accurate beach surf min/max per spot; aggregate across
+  // all monitored spots to show the overall LA County surf height range.
+  const surfRangeEl = document.getElementById('ub-surf-range');
+  if (surfRangeEl) {
+    const valid = (parsedSpots || []).filter(Boolean);
+    if (valid.length) {
+      const mins = valid.map(p => p.waveMin).filter(v => v != null);
+      const maxs = valid.map(p => p.waveMax).filter(v => v != null);
+      const lo = mins.length ? Math.min(...mins) : null;
+      const hi = maxs.length ? Math.max(...maxs) : null;
+      if (lo != null && hi != null) {
+        surfRangeEl.textContent = `SURF: ${lo}–${hi} ft beach (Surfline)`;
+        surfRangeEl.style.color = 'var(--brand-gold)';
+      } else {
+        surfRangeEl.textContent = 'SURF: — ft (Surfline)';
+      }
+    } else {
+      surfRangeEl.textContent = 'SURF: blocked (Surfline)';
+    }
+  }
+
   if (!parsedSpots || parsedSpots.every(p => p === null)) {
     el.innerHTML = `<span style="color:rgba(255,255,255,0.4)">Surfline data unavailable</span>`;
     return;
