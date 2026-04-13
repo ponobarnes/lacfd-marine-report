@@ -1956,7 +1956,7 @@
     DATA SOURCES: NOAA/NWS — National Weather Service Los Angeles · Open-Meteo Marine API · NOAA Tides & Currents · CDIP Wave Buoys
   </div>
   <div>
-    SURFLINE.COM — Independent surf forecasting · For operational planning use only · Not for navigation
+    NOAA NDBC — Real-time nearshore buoy observations · For operational planning use only · Not for navigation
   </div>
   <div style="text-align:right">
     <button class="refresh-btn" onclick="initReport()">⟳ REFRESH DATA</button>
@@ -3128,8 +3128,8 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
   });
   dailyHTML += `</tbody></table>`;
 
-  // Surfline section — built async, placeholder here, replaced after load
-  const surflineNote = `<div id="surfline-section"><div class="loading-state" style="padding:24px"><div class="loading-bar"><div class="loading-fill"></div></div><div style="margin-top:8px">FETCHING SURFLINE DATA...</div></div></div>`;
+  // NDBC buoy section — built async, placeholder here, replaced after load
+  const ndbcNote = `<div id="ndbc-section"><div class="loading-state" style="padding:24px"><div class="loading-bar"><div class="loading-fill"></div></div><div style="margin-top:8px">FETCHING NOAA NDBC BUOY DATA...</div></div></div>`;
 
   // WaveCast section — built async, placeholder here, replaced after load
   const waveCastNote = `<div id="wavecast-section"><div class="loading-state" style="padding:24px"><div class="loading-bar"><div class="loading-fill"></div></div><div style="margin-top:8px">FETCHING WAVECAST SOCAL FORECAST...</div></div></div>`;
@@ -3253,8 +3253,8 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
 
     ${makeSection('sec-08','08','Beach Zone Assessments — LA County', zonesHTML)}
 
-    ${makeSection('sec-09','09','Surfline Spot Conditions',
-      surflineNote, 'SURFLINE.COM · SUBSCRIPTION')}
+    ${makeSection('sec-09','09','NOAA NDBC Nearshore Buoys',
+      ndbcNote, 'NOAA NDBC · REAL-TIME OBSERVATIONS')}
 
     ${makeSection('sec-10','10','WaveCast SoCal Forecast',
       waveCastNote, 'WAVECAST.COM · SUN/TUE/THU')}
@@ -3269,372 +3269,205 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
 }
 
 // ============================================================
-// SURFLINE HYBRID INTEGRATION
-// Unofficial API endpoints (reverse-engineered from surfline.com)
-// + Live cam links for visual confirmation
+// NOAA NDBC NEARSHORE BUOY INTEGRATION
+// Real-time wave observations from NOAA National Data Buoy Center
+// stations in the LA County operational area. No auth required.
+// Data fetched via Netlify proxy to avoid CORS issues.
 // ============================================================
 
-// Key LA County spots with Surfline spot IDs
-const SURFLINE_SPOTS = [
-  {
-    name: 'Zuma Beach',
-    region: 'N. Malibu',
-    id: '584204214e65fad6a7709c6f',
-    camId: null,
-    camName: 'Zuma Beach',
-    url: 'https://www.surfline.com/surf-report/zuma-beach/5afb6566bb6fd9001a250fbb'
-  },
-  {
-    name: 'Malibu — 1st Point',
-    region: 'Malibu',
-    id: '584204214e65fad6a7709b9f',
-    camId: null,
-    camName: 'Malibu Point',
-    url: 'https://www.surfline.com/surf-report/malibu-first-point/584204214e65fad6a7709b9f'
-  },
-  {
-    name: 'Santa Monica Pier',
-    region: 'Santa Monica Bay',
-    id: '584204214e65fad6a7709bdf',
-    camId: null,
-    camName: null,
-    url: 'https://www.surfline.com/surf-report/santa-monica-beach/584204214e65fad6a7709bdf'
-  },
-  {
-    name: 'Venice Beach',
-    region: 'Santa Monica Bay S.',
-    id: '584204214e65fad6a7709bdb',
-    camId: null,
-    camName: 'Venice Beach',
-    url: 'https://www.surfline.com/surf-report/venice-beach/5842041f4e65fad6a7708819'
-  },
-  {
-    name: 'El Porto',
-    region: 'Manhattan Beach',
-    id: '584204214e65fad6a7709c07',
-    camId: null,
-    camName: 'El Porto',
-    url: 'https://www.surfline.com/surf-report/el-porto/5842041f4e65fad6a7708906'
-  },
-  {
-    name: 'Manhattan Beach Pier',
-    region: 'South Bay',
-    id: '584204214e65fad6a7709c09',
-    camId: null,
-    camName: 'Manhattan Beach',
-    url: 'https://www.surfline.com/surf-report/manhattan-beach-pier/584204214e65fad6a7709c09'
-  },
-  {
-    name: 'Hermosa Beach',
-    region: 'South Bay',
-    id: '584204214e65fad6a7709c0b',
-    camId: null,
-    camName: null,
-    url: 'https://www.surfline.com/surf-report/hermosa-beach-pier/5b17281e4a274e001a11fcc3'
-  },
-  {
-    name: 'Redondo Beach',
-    region: 'South Bay',
-    id: '584204214e65fad6a7709c0d',
-    camId: null,
-    camName: null,
-    url: 'https://www.surfline.com/surf-report/sapphire-st-/584204214e65fad6a7709d0b'
-  }
-];
-
-// Cam spots — URLs verified from your Surfline subscription
-// Click-throughs use the correct spot IDs confirmed by user
-// ============================================================
-// SURFLINE WIDGET EMBEDS
-// Uses Surfline's official iframe embed format — works with
-// your paid subscription, no API/CORS issues.
-// Spot IDs verified by user. Each widget shows the full
-// forecast (waves, wind, tide, cams) for that spot.
-// ============================================================
-
-// All LA County spots with verified IDs and embed-ready URLs
-// ============================================================
-// SURFLINE — PROXY-POWERED DATA CARDS
-// Calls /.netlify/functions/surfline?spotId=XXX which runs
-// server-side (no CORS). Returns wave, rating, conditions,
-// wind data displayed as rich per-spot cards.
-// ============================================================
-
-const SURFLINE_SPOTS_DATA = [
-  { name: 'Zuma Beach',           region: 'N. Malibu',        spotId: '5afb6566bb6fd9001a250fbb', url: 'https://www.surfline.com/surf-report/zuma-beach/5afb6566bb6fd9001a250fbb',                       cam: true },
-  { name: 'Malibu — 1st Point',   region: 'Malibu',           spotId: '584204214e65fad6a7709b9f', url: 'https://www.surfline.com/surf-report/malibu-first-point/584204214e65fad6a7709b9f',               cam: true },
-  { name: 'Santa Monica Beach',   region: 'Santa Monica Bay', spotId: '584204214e65fad6a7709bdf', url: 'https://www.surfline.com/surf-report/santa-monica-beach/584204214e65fad6a7709bdf',             cam: false },
-  { name: 'Venice Beach',         region: 'SM Bay S.',        spotId: '5842041f4e65fad6a7708819', url: 'https://www.surfline.com/surf-report/venice-beach/5842041f4e65fad6a7708819',                   cam: true },
-  { name: 'El Porto',             region: 'Manhattan Beach',  spotId: '5842041f4e65fad6a7708906', url: 'https://www.surfline.com/surf-report/el-porto/5842041f4e65fad6a7708906',                       cam: true },
-  { name: 'Manhattan Beach Pier', region: 'South Bay',        spotId: '584204214e65fad6a7709c09', url: 'https://www.surfline.com/surf-report/manhattan-beach-pier/584204214e65fad6a7709c09',           cam: false },
-  { name: 'Hermosa Beach Pier',   region: 'South Bay',        spotId: '5b17281e4a274e001a11fcc3', url: 'https://www.surfline.com/surf-report/hermosa-beach-pier/5b17281e4a274e001a11fcc3',             cam: true },
-  { name: 'Redondo — Sapphire',   region: 'South Bay',        spotId: '584204214e65fad6a7709d0b', url: 'https://www.surfline.com/surf-report/sapphire-st-/584204214e65fad6a7709d0b',                   cam: true },
-];
-
-const SL_RATINGS = {
-  0: { label: 'FLAT',       color: '#8899aa', bg: 'rgba(136,153,170,0.12)' },
-  1: { label: 'VERY POOR',  color: '#8899aa', bg: 'rgba(136,153,170,0.12)' },
-  2: { label: 'POOR',       color: '#7a9ab0', bg: 'rgba(122,154,176,0.12)' },
-  3: { label: 'POOR-FAIR',  color: '#a08040', bg: 'rgba(160,128,64,0.12)'  },
-  4: { label: 'FAIR',       color: '#c49000', bg: 'rgba(196,144,0,0.12)'   },
-  5: { label: 'FAIR-GOOD',  color: '#0d7a4e', bg: 'rgba(13,122,78,0.12)'   },
-  6: { label: 'GOOD',       color: '#0d7a4e', bg: 'rgba(13,122,78,0.15)'   },
-  7: { label: 'VERY GOOD',  color: '#007a9e', bg: 'rgba(0,122,158,0.12)'   },
-  8: { label: 'EPIC',       color: '#002d62', bg: 'rgba(0,45,98,0.12)'     },
-};
-
-function slRatingInfo(val) {
-  return SL_RATINGS[Math.min(8, Math.max(0, Math.round(val || 0)))] || SL_RATINGS[0];
+// Helper: degrees → compass direction
+function degToCompass(deg) {
+  if (deg == null) return '';
+  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return dirs[Math.round(((deg % 360) + 360) % 360 / 22.5) % 16];
 }
 
-async function fetchSurflineViaProxy(spotId) {
-  try {
-    const resp = await fetch(`/.netlify/functions/surfline?spotId=${spotId}`);
-    const json = await resp.json().catch(() => null);
-    if (!resp.ok) {
-      // Pass structured error back so the UI can diagnose it
-      console.warn(`Surfline proxy [${spotId}] → HTTP ${resp.status}`, json);
-      return { _proxyError: true, status: resp.status, code: json?.error, detail: json?.detail };
-    }
-    return json;
-  } catch(e) {
-    console.warn(`Surfline proxy failed for ${spotId}:`, e.message);
-    return { _proxyError: true, status: 0, code: 'network_error', detail: e.message };
-  }
+// Helper: meters → feet string
+function mToFtStr(m, dec = 1) {
+  return m != null ? (m * 3.281).toFixed(dec) : '--';
 }
 
-function parseSurflineData(data) {
-  if (!data || data.error || data._proxyError) return null;
-  try {
-    const { waveData, ratingData, condData, windData } = data;
-    const now = Date.now() / 1000;
-
-    const closest = (arr) => arr && arr.length
-      ? arr.reduce((p, c) => Math.abs(c.timestamp - now) < Math.abs(p.timestamp - now) ? c : p)
-      : null;
-
-    const wave   = closest(waveData?.data?.wave);
-    const rating = closest(ratingData?.data?.rating);
-    const wind   = closest(windData?.data?.wind);
-    const cond   = condData?.data?.conditions?.[0] || null;
-
-    // Find best swell (highest energy)
-    const swells = wave?.swells?.filter(s => s.height > 0) || [];
-    swells.sort((a, b) => (b.height * b.period) - (a.height * a.period));
-    const primarySwell  = swells[0] || null;
-    const secondarySwell = swells[1] || null;
-
-    return {
-      waveMin:       wave?.surf?.min   ?? null,
-      waveMax:       wave?.surf?.max   ?? null,
-      wavePlus:      wave?.surf?.plus  ?? false,
-      humanRelation: wave?.surf?.humanRelation ?? '',
-      ratingVal:     rating?.rating?.value ?? 0,
-      ratingKey:     rating?.rating?.key   ?? 'FLAT',
-      primarySwell,
-      secondarySwell,
-      windSpeed:     wind?.speed     ?? null,
-      windDir:       wind?.direction ?? null,
-      windDirType:   wind?.directionType ?? '',  // ONSHORE / OFFSHORE / CROSS-SHORE
-      windOptimal:   wind?.optimalScore ?? null,
-      amForecast:    cond?.am?.observation ?? '',
-      pmForecast:    cond?.pm?.observation ?? '',
-      amRating:      cond?.am?.rating ?? null,
-      pmRating:      cond?.pm?.rating ?? null,
-    };
-  } catch(e) {
-    console.warn('Surfline parse error:', e);
-    return null;
-  }
+// Helper: m/s → knots
+function msToKts(ms) {
+  return ms != null ? Math.round(ms * 1.944) : null;
 }
 
-function windTypeLabel(type) {
-  const t = (type || '').toUpperCase();
-  if (t.includes('OFFSHORE')) return { label: '↗ OFFSHORE', color: 'var(--green)', note: 'Clean conditions' };
-  if (t.includes('ONSHORE'))  return { label: '↙ ONSHORE',  color: 'var(--brand-red)', note: 'Choppy surface' };
-  if (t.includes('CROSS'))    return { label: '→ CROSS-SHORE', color: '#c49000', note: 'Side chop' };
-  return { label: type || '--', color: 'var(--text-dim)', note: '' };
+// Helper: °C → °F
+function cToF(c) {
+  return c != null ? (c * 9 / 5 + 32).toFixed(1) : null;
 }
 
-function buildSurflineCard(spot, parsed) {
-  // Card for failed/unavailable data
-  if (!parsed) {
+// Wave-height colour ramp (in metres)
+function waveColor(m) {
+  if (m == null) return '#888';
+  if (m < 0.5)  return '#00cc88'; // flat / knee-high
+  if (m < 1.0)  return '#88cc00'; // waist-high
+  if (m < 1.5)  return '#e0b000'; // head-high
+  if (m < 2.0)  return '#e07000'; // overhead
+  return '#cc3300';               // double-overhead+
+}
+
+// Build a single NDBC buoy card using the existing sl-card CSS
+function buildNDBCCard(station) {
+  const obs = station.obs;
+  if (!obs) {
     return `
       <div class="sl-card sl-card-unavail">
+        <div class="sl-card-stripe" style="background:var(--border)"></div>
         <div class="sl-card-header">
-          <div class="sl-card-name">${spot.name}</div>
-          <div class="sl-card-region">${spot.region}</div>
+          <div class="sl-card-name">${station.name}</div>
+          <div class="sl-card-region">${station.area}</div>
         </div>
         <div class="sl-card-body" style="text-align:center;padding:20px 12px">
-          <div style="font-size:24px;margin-bottom:8px">🌊</div>
-          <div style="font-family:var(--font-title);font-size:12px;font-weight:700;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase">Data Unavailable</div>
-          <div style="font-size:11px;color:var(--text-dim);margin-top:4px">Proxy may still be deploying</div>
-          <a href="${spot.url}" target="_blank" class="sl-card-fullbtn" style="margin-top:12px">View on Surfline ↗</a>
+          <div style="font-size:24px;margin-bottom:8px">🔴</div>
+          <div style="font-family:var(--font-title);font-size:11px;letter-spacing:1px;color:var(--text-dim)">DATA UNAVAILABLE</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:4px">${station.error || 'Station offline'}</div>
+        </div>
+        <div class="sl-card-footer">
+          <div>NDBC Sta. ${station.id}</div>
+          <a href="https://www.ndbc.noaa.gov/station_page.php?station=${station.id}" target="_blank" class="sl-card-fullbtn" style="padding:3px 10px;font-size:10px">NDBC ↗</a>
         </div>
       </div>`;
   }
 
-  const rt = slRatingInfo(parsed.ratingVal);
-  const wt = windTypeLabel(parsed.windDirType);
-  const waveRange = parsed.waveMin !== null
-    ? `${parsed.waveMin}-${parsed.waveMax}${parsed.wavePlus ? '+' : ''}`
-    : '--';
+  const wvM    = obs.waveHeightM;
+  const wvFt   = mToFtStr(wvM);
+  const color  = waveColor(wvM);
+  const period = obs.dominantPeriod != null ? obs.dominantPeriod.toFixed(0) + 's' : '--';
+  const wDir   = obs.waveDir != null ? degToCompass(obs.waveDir) + ' ' + Math.round(obs.waveDir) + '°' : '--';
 
-  // Swell direction arrows
-  const swellArrow = (dir) => {
-    if (dir == null) return '';
-    const d = degToCardinal(dir);
-    const arrows = { N:'↓',NNE:'↙',NE:'↙',ENE:'←',E:'←',ESE:'←',SE:'↖',SSE:'↑',S:'↑',SSW:'↗',SW:'↗',WSW:'→',W:'→',WNW:'→',NW:'↘',NNW:'↓' };
-    return arrows[d] || '';
-  };
+  const windKts = msToKts(obs.windSpeedMs);
+  const gustKts = msToKts(obs.gustMs);
+  const windDir = obs.windDir != null ? degToCompass(obs.windDir) : '';
+  const windStr = windKts != null ? `${windKts} kts ${windDir}${gustKts ? ' (G' + gustKts + ')' : ''}` : '--';
+
+  const wtF    = cToF(obs.waterTempC);
+  const atF    = cToF(obs.airTempC);
+
+  // How stale is the obs?
+  const minsAgo = obs.time ? Math.round((Date.now() - new Date(obs.time)) / 60000) : null;
+  const ageStr  = minsAgo != null ? (minsAgo < 90 ? minsAgo + ' min ago' : Math.round(minsAgo / 60) + ' hr ago') : '';
+  const ageColor = minsAgo == null ? '#888' : minsAgo < 60 ? '#00cc88' : minsAgo < 120 ? '#c4c800' : '#cc4400';
+
+  // Pressure tendency label
+  const depth = station.depth === 'nearshore' ? '🟢 NEARSHORE' : '🔵 OFFSHORE';
 
   return `
     <div class="sl-card">
-      <!-- Rating stripe at top -->
-      <div class="sl-card-stripe" style="background:${rt.color}"></div>
-
-      <!-- Header -->
+      <div class="sl-card-stripe" style="background:${color}"></div>
       <div class="sl-card-header">
         <div>
-          <div class="sl-card-name">${spot.name}</div>
-          <div class="sl-card-region">${spot.region}</div>
+          <div class="sl-card-name">${station.name}</div>
+          <div class="sl-card-region">${station.area}</div>
         </div>
-        <div class="sl-card-rating-pill" style="color:${rt.color};background:${rt.bg}">
-          ${rt.label}
-        </div>
+        <div class="sl-card-rating-pill" style="color:${ageColor};background:${ageColor}22;font-size:9px">${ageStr}</div>
       </div>
-
       <div class="sl-card-body">
 
-        <!-- Wave height — big display -->
         <div class="sl-card-wave-row">
           <div>
-            <div class="sl-card-wave-ht" style="color:${rt.color}">${waveRange}</div>
-            <div class="sl-card-wave-unit">ft surf</div>
+            <div class="sl-card-wave-ht" style="color:${color}">${wvFt}</div>
+            <div class="sl-card-wave-unit">ft sig. wave</div>
           </div>
-          ${parsed.humanRelation ? `<div class="sl-card-human">${parsed.humanRelation}</div>` : ''}
+          <div style="text-align:right">
+            <div style="font-family:var(--font-title);font-size:18px;font-weight:800;color:var(--text)">${period}</div>
+            <div class="sl-card-wave-unit">dom. period</div>
+          </div>
         </div>
 
-        <!-- Swells -->
-        <div class="sl-card-section-label">SWELL</div>
-        <div class="sl-card-swell-wrap">
-          ${parsed.primarySwell ? `
-            <div class="sl-card-swell primary">
-              <span class="sl-swell-tag">PRIMARY</span>
-              <span class="sl-swell-ht">${parsed.primarySwell.height.toFixed(1)}ft</span>
-              <span class="sl-swell-per">@ ${Math.round(parsed.primarySwell.period)}s</span>
-              <span class="sl-swell-dir">${swellArrow(parsed.primarySwell.direction)} ${degToCardinal(parsed.primarySwell.direction)}</span>
-            </div>` : '<div class="sl-card-swell">No swell data</div>'}
-          ${parsed.secondarySwell ? `
-            <div class="sl-card-swell secondary">
-              <span class="sl-swell-tag">SECONDARY</span>
-              <span class="sl-swell-ht">${parsed.secondarySwell.height.toFixed(1)}ft</span>
-              <span class="sl-swell-per">@ ${Math.round(parsed.secondarySwell.period)}s</span>
-              <span class="sl-swell-dir">${swellArrow(parsed.secondarySwell.direction)} ${degToCardinal(parsed.secondarySwell.direction)}</span>
-            </div>` : ''}
+        <div class="sl-card-section-label">WAVE DIRECTION</div>
+        <div style="font-family:var(--mono);font-size:12px;color:var(--text);padding:4px 0 8px">
+          ${wDir}
         </div>
 
-        <!-- Wind -->
         <div class="sl-card-section-label">WIND</div>
-        <div class="sl-card-wind-row">
-          <span class="sl-wind-type" style="color:${wt.color}">${wt.label}</span>
-          <span class="sl-wind-spd">${parsed.windSpeed !== null ? Math.round(parsed.windSpeed) + ' mph' : '--'}</span>
-          ${wt.note ? `<span class="sl-wind-note">${wt.note}</span>` : ''}
+        <div class="sl-card-wind-row" style="padding:4px 0 8px">
+          <div style="font-family:var(--mono);font-size:12px;color:var(--text)">${windStr}</div>
         </div>
 
-        <!-- AM/PM conditions -->
-        ${parsed.amForecast || parsed.pmForecast ? `
-          <div class="sl-card-section-label">CONDITIONS</div>
-          <div class="sl-card-cond">
-            ${parsed.amForecast ? `<div><strong>AM:</strong> ${parsed.amForecast}</div>` : ''}
-            ${parsed.pmForecast ? `<div><strong>PM:</strong> ${parsed.pmForecast}</div>` : ''}
-          </div>` : ''}
+        <div class="sl-card-section-label">WATER / AIR TEMP</div>
+        <div style="font-family:var(--mono);font-size:12px;color:var(--text);padding:4px 0 4px">
+          ${wtF ? wtF + '°F water' : '--'} · ${atF ? atF + '°F air' : '--'}
+        </div>
 
       </div>
-
-      <!-- Footer buttons -->
       <div class="sl-card-footer">
-        <a href="${spot.url}" target="_blank" class="sl-card-fullbtn">
-          📊 Full Report ↗
-        </a>
-        ${spot.cam ? `<a href="${spot.url}" target="_blank" class="sl-card-cambtn">
-          <span class="blink">●</span> Live Cam
-        </a>` : ''}
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="font-family:var(--font-title);font-size:9px;color:${ageColor};letter-spacing:0.5px">${depth}</span>
+          <span>Sta. ${station.id}</span>
+        </div>
+        <a href="https://www.ndbc.noaa.gov/station_page.php?station=${station.id}"
+           target="_blank" class="sl-card-fullbtn" style="padding:3px 10px;font-size:10px">NDBC ↗</a>
       </div>
     </div>`;
 }
 
-async function loadSurflineSection() {
-  const el = document.getElementById('surfline-section');
+async function loadNDBCSection() {
+  const el = document.getElementById('ndbc-section');
   if (!el) return;
 
-  const now = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', timeZone:'America/Los_Angeles'});
+  const now = new Date().toLocaleTimeString('en-US',
+    { hour: '2-digit', minute: '2-digit', timeZone: 'America/Los_Angeles' });
 
-  // Show loading state
-  el.innerHTML = `
-    <div class="sl-card-grid">
-      ${SURFLINE_SPOTS_DATA.map(s => `
-        <div class="sl-card sl-card-loading">
-          <div class="sl-card-stripe" style="background:var(--border)"></div>
-          <div class="sl-card-header">
-            <div class="sl-card-name">${s.name}</div>
-            <div class="sl-card-region">${s.region}</div>
-          </div>
-          <div class="sl-card-body" style="padding:20px 12px;text-align:center">
-            <div class="loading-bar" style="margin:0 auto"><div class="loading-fill"></div></div>
-          </div>
-        </div>`).join('')}
-    </div>`;
+  // Show skeleton cards while loading
+  el.innerHTML = `<div class="sl-card-grid">
+    ${Array(5).fill(0).map(() => `
+      <div class="sl-card sl-card-loading">
+        <div class="sl-card-stripe" style="background:var(--border)"></div>
+        <div class="sl-card-body" style="padding:20px 12px;text-align:center">
+          <div class="loading-bar" style="margin:0 auto"><div class="loading-fill"></div></div>
+        </div>
+      </div>`).join('')}
+  </div>`;
 
-  // Fetch all spots in parallel via proxy
-  const results = await Promise.all(
-    SURFLINE_SPOTS_DATA.map(s => fetchSurflineViaProxy(s.spotId))
-  );
-  const parsed = results.map(r => parseSurflineData(r));
-  const successCount = parsed.filter(p => p !== null).length;
+  try {
+    const resp = await fetch('/.netlify/functions/ndbc');
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    if (!data.stations) throw new Error('No station data');
 
-  // Update the unified briefing Surfline subsection
-  window._surflineSpotsData = SURFLINE_SPOTS_DATA;
-  updateUBSurfline(parsed);
+    const stations = data.stations;
+    const successCount = stations.filter(s => s.obs).length;
 
-  el.innerHTML = `
-    <div class="sl-top-bar">
-      <div>
-        <span style="font-family:var(--font-title);font-size:11px;font-weight:700;color:var(--brand-gold);letter-spacing:1.5px;text-transform:uppercase">Surfline.com · Paid Subscription</span>
-        <span style="font-family:var(--mono);font-size:10px;color:rgba(212,186,107,0.6);margin-left:10px">via proxy · ${now} PDT</span>
+    // Update unified briefing
+    updateUBNDBC(stations);
+
+    const fetchedAt = data.fetched
+      ? new Date(data.fetched).toLocaleTimeString('en-US',
+          { hour: '2-digit', minute: '2-digit', timeZone: 'America/Los_Angeles' })
+      : now;
+
+    el.innerHTML = `
+      <div class="sl-top-bar">
+        <div>
+          <span style="font-family:var(--font-title);font-size:11px;font-weight:700;color:var(--brand-gold);letter-spacing:1.5px;text-transform:uppercase">NOAA NDBC · Real-Time Buoy Observations</span>
+          <span style="font-family:var(--mono);font-size:10px;color:rgba(212,186,107,0.6);margin-left:10px">via proxy · ${fetchedAt} PDT</span>
+        </div>
+        <div style="font-family:var(--mono);font-size:10px;color:${successCount > 0 ? '#00cc88' : '#e05c00'}">
+          ${successCount > 0 ? `● ${successCount}/${stations.length} buoys live` : '⚠ No buoy data'}
+        </div>
       </div>
-      <div style="font-family:var(--mono);font-size:10px;color:${successCount > 0 ? '#00cc88' : '#e05c00'}">
-        ${successCount > 0 ? `● ${successCount}/${SURFLINE_SPOTS_DATA.length} spots live` : '⚠ Proxy not responding'}
+      <div class="sl-card-grid">
+        ${stations.map(s => buildNDBCCard(s)).join('')}
       </div>
-    </div>
-    <div class="sl-card-grid">
-      ${SURFLINE_SPOTS_DATA.map((s, i) => buildSurflineCard(s, parsed[i])).join('')}
-    </div>
-    ${successCount === 0 ? (() => {
-      // Diagnose the failure from the first error result we got back
-      const firstErr = results.find(r => r && r._proxyError);
-      const code = firstErr?.code || '';
-      const status = firstErr?.status || 0;
-      let title = 'Proxy Not Responding';
-      let msg = 'Make sure you\'ve deployed <code>netlify/functions/surfline.js</code> to your Netlify site and that it\'s connected via GitHub (not drag-and-drop).';
-      if (status === 404 || code === 'network_error') {
-        title = 'Function Not Found (404)';
-        msg = 'The Netlify function hasn\'t deployed yet. Check that your GitHub repo has <code>netlify/functions/surfline.js</code> and that Netlify is connected to the correct repo with base directory set.';
-      } else if (code === 'surfline_blocked' || status === 403 || status === 429) {
-        title = `Surfline Blocking Proxy (HTTP ${status})`;
-        msg = 'Surfline\'s Cloudflare protection is rejecting requests from Netlify\'s servers. This is a known issue with cloud-hosted proxies. Consider using your NOAA buoy data (already live) as the nearshore source, or contact Surfline about API access.';
-      } else if (status === 502) {
-        title = 'Surfline API Error (502)';
-        msg = 'The proxy reached Surfline but their API returned an error. This may be a temporary outage — try reloading in a few minutes.';
-      }
-      return `<div style="background:var(--brand-red-bg);border:1px solid rgba(237,26,59,0.2);border-left:4px solid var(--brand-red);border-radius:6px;padding:14px 16px;margin-top:10px;font-size:13px;color:var(--text)">
-        <strong style="font-family:var(--font-title);font-size:14px;color:var(--brand-red-dark)">${title}</strong><br>${msg}
+      <div style="margin-top:12px;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:0.5px">
+        DATA: NOAA NATIONAL DATA BUOY CENTER (NDBC) · REAL-TIME METEOROLOGICAL OBSERVATIONS · UNITS: FT, KTS, °F
+        · BUOYS: 46221 (SM BASIN) · 46222 (SAN PEDRO CH.) · 46253 (SAN PEDRO N.) · 46025 (OUTER SM BAY) · 46086 (SAN CLEMENTE)
       </div>`;
-    })() : ''}
-    <div class="sl-api-note" style="margin-top:10px">
-      DATA: SURFLINE.COM · PROXY: /.netlify/functions/surfline · SUBSCRIPTION REQUIRED
-    </div>`;
+
+  } catch (e) {
+    console.error('NDBC section error:', e);
+    updateUBNDBC(null);
+    el.innerHTML = `
+      <div style="background:var(--brand-red-bg);border:1px solid rgba(237,26,59,0.2);border-left:4px solid var(--brand-red);border-radius:6px;padding:14px 16px;font-size:13px;color:var(--text)">
+        <strong style="font-family:var(--font-title);font-size:14px;color:var(--brand-red-dark)">NDBC Data Unavailable</strong><br>
+        Could not reach the NDBC proxy. Make sure <code>netlify/functions/ndbc.js</code> is deployed.
+        You can <a href="https://www.ndbc.noaa.gov" target="_blank" style="color:var(--brand-gold)">view buoy data directly at ndbc.noaa.gov ↗</a>
+      </div>`;
+  }
 }
+
+
 
 // ============================================================
 // WAVECAST SOCAL FORECAST INTEGRATION
@@ -3749,7 +3582,7 @@ async function loadWaveCastSection() {
     el.innerHTML = `
       <div style="background:var(--bg-card);border:1px solid var(--border);border-left:4px solid var(--brand-navy);border-radius:6px;padding:16px 18px">
         <div style="font-family:var(--font-title);font-size:14px;font-weight:800;color:var(--brand-navy);letter-spacing:1px;margin-bottom:8px">⚠ WAVECAST PROXY NOT RESPONDING</div>
-        <p style="font-size:13px;color:var(--text);margin:0 0 12px">The WaveCast proxy function needs to be deployed to Netlify alongside the <code>surfline.js</code> function.</p>
+        <p style="font-size:13px;color:var(--text);margin:0 0 12px">The WaveCast proxy function needs to be deployed to Netlify alongside the <code>ndbc.js</code> function.</p>
         <a href="https://wavecast.com/socal/" target="_blank"
            style="display:inline-block;font-family:var(--font-title);font-size:12px;font-weight:700;color:#fff;background:var(--brand-navy);padding:8px 16px;border-radius:5px;text-decoration:none;letter-spacing:1px">
           VIEW WAVECAST DIRECTLY ↗
@@ -4018,12 +3851,12 @@ function buildUnifiedBriefing(nws, marine, atmos, tides, waterTempStr, swellRisk
           </div>
         </div>
 
-        <!-- SURFLINE SPOT SUMMARY (populated async) -->
-        <div class="ub-row" id="ub-surfline-row">
-          <div class="ub-row-label">🏄 Surfline Spot Conditions · surfline.com</div>
-          <div class="ub-loading" id="ub-surfline-content">
+        <!-- NDBC BUOY SUMMARY (populated async) -->
+        <div class="ub-row" id="ub-ndbc-row">
+          <div class="ub-row-label">🔵 NOAA NDBC Nearshore Buoys · Real-Time Observations</div>
+          <div class="ub-loading" id="ub-ndbc-content">
             <div class="loading-bar" style="width:120px"><div class="loading-fill"></div></div>
-            <span>Fetching Surfline data...</span>
+            <span>Fetching buoy data...</span>
           </div>
         </div>
 
@@ -4041,36 +3874,38 @@ function buildUnifiedBriefing(nws, marine, atmos, tides, waterTempStr, swellRisk
         <span>NOAA/NWS API.WEATHER.GOV</span>
         <span>OPEN-METEO MARINE API</span>
         <span>NOAA TIDES &amp; CURRENTS STA.9410660</span>
-        <span>SURFLINE.COM VIA PROXY</span>
+        <span>NOAA.GOV/NDBC VIA PROXY</span>
         <span>WAVECAST.COM/SOCAL VIA PROXY</span>
       </div>
     </div>`;
 }
 
-// Update unified briefing Surfline subsection after async load
-function updateUBSurfline(parsedSpots) {
-  const el = document.getElementById('ub-surfline-content');
+// Update unified briefing NDBC subsection after async load
+function updateUBNDBC(stations) {
+  const el = document.getElementById('ub-ndbc-content');
   if (!el) return;
-  if (!parsedSpots || parsedSpots.every(p => p === null)) {
-    el.innerHTML = `<span style="color:rgba(255,255,255,0.4)">Surfline proxy not responding — <a href="https://www.surfline.com" target="_blank" style="color:var(--brand-gold)">view directly ↗</a></span>`;
+  if (!stations || !stations.length) {
+    el.innerHTML = `<span style="color:rgba(255,255,255,0.4)">NDBC data unavailable — <a href="https://www.ndbc.noaa.gov" target="_blank" style="color:var(--brand-gold)">view at NDBC ↗</a></span>`;
     return;
   }
-  const SURFLINE_SPOTS_DATA_LOCAL = window._surflineSpotsData || [];
-  el.outerHTML = `<div id="ub-surfline-content">
-    ${SURFLINE_SPOTS_DATA_LOCAL.map((s, i) => {
-      const p = parsedSpots[i];
-      if (!p) return `<div class="ub-spot-row"><div class="ub-spot-name">${s.name}</div><span class="ub-spot-pill" style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.4)">NO DATA</span></div>`;
-      const ratingColors = { 'FLAT':'#aaa','POOR':'#e05c00','POOR TO FAIR':'#c49000','FAIR':'#c49000','FAIR TO GOOD':'#00aa66','GOOD':'#00cc88','GOOD TO EPIC':'#00eeff','EPIC':'#ff44ff' };
-      const rc = ratingColors[p.rating?.toUpperCase()] || '#aaa';
-      const wt = p.windType || 'N/A';
-      const wtColor = wt === 'Offshore' ? '#00cc88' : wt === 'Onshore' ? '#ff7722' : '#f0b800';
+  el.outerHTML = `<div id="ub-ndbc-content">
+    ${stations.map(s => {
+      const obs = s.obs;
+      if (!obs) return `<div class="ub-spot-row"><div class="ub-spot-name">${s.name}</div><span class="ub-spot-pill" style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.4)">NO DATA</span></div>`;
+      const wvFt = obs.waveHeightM != null ? (obs.waveHeightM * 3.281).toFixed(1) : '--';
+      const wvColor = obs.waveHeightM == null ? '#aaa' : obs.waveHeightM < 0.6 ? '#00cc88' : obs.waveHeightM < 1.2 ? '#c4c800' : obs.waveHeightM < 1.8 ? '#e07000' : '#cc3300';
+      const wdir = obs.waveDir != null ? degToCompass(obs.waveDir) : '';
+      const wspd = obs.windSpeedMs != null ? Math.round(obs.windSpeedMs * 1.944) + ' kts' : '--';
+      const wndDir = obs.windDir != null ? degToCompass(obs.windDir) : '';
+      const wtF = obs.waterTempC != null ? (obs.waterTempC * 9/5 + 32).toFixed(1) + '°F' : '--';
+      const minsAgo = obs.time ? Math.round((Date.now() - new Date(obs.time)) / 60000) : null;
       return `<div class="ub-spot-row">
         <div class="ub-spot-name">${s.name}</div>
-        <span class="ub-spot-pill" style="background:rgba(255,255,255,0.08);color:#fff">${p.waveMin || '--'}–${p.waveMax || '--'} ft</span>
-        <span class="ub-spot-pill" style="background:${rc}22;color:${rc}">${p.rating || '--'}</span>
-        <span class="ub-spot-pill" style="background:${wtColor}22;color:${wtColor}">${wt}</span>
-        <span style="font-family:var(--mono);font-size:10px;color:rgba(255,255,255,0.4)">${p.swellHt || '--'}ft @ ${p.swellPeriod || '--'}s ${p.swellDir || ''}</span>
-        <a href="${s.url}" target="_blank" style="font-family:var(--mono);font-size:10px;color:var(--brand-gold);margin-left:auto">↗</a>
+        <span class="ub-spot-pill" style="background:${wvColor}22;color:${wvColor}">${wvFt} ft</span>
+        <span class="ub-spot-pill" style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.7)">${obs.dominantPeriod || '--'}s ${wdir}</span>
+        <span class="ub-spot-pill" style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.55)">💨 ${wspd} ${wndDir}</span>
+        <span style="font-family:var(--mono);font-size:10px;color:rgba(255,255,255,0.4)">${wtF}${minsAgo != null ? ' · ' + minsAgo + 'm ago' : ''}</span>
+        <a href="https://www.ndbc.noaa.gov/station_page.php?station=${s.id}" target="_blank" style="font-family:var(--mono);font-size:10px;color:var(--brand-gold);margin-left:auto">↗</a>
       </div>`;
     }).join('')}
   </div>`;
@@ -4159,7 +3994,7 @@ async function initReport() {
       selectZone(prevZone);
     }
     // Load Surfline async after main report is rendered
-    loadSurflineSection();
+    loadNDBCSection();
     // Load WaveCast forecast async after main report is rendered
     loadWaveCastSection();
   } catch(err) {
