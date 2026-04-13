@@ -1,3 +1,11 @@
 [build]
-  functions = "netlify/functions"
-  publish = "."
+  functions      = "netlify/functions"
+  publish        = "."
+  edge_functions = "netlify/edge-functions"
+
+# Surfline proxy — runs on Cloudflare edge (Deno), not AWS Lambda,
+# so requests originate from Cloudflare's own network rather than
+# a flagged datacenter IP range.
+[[edge_functions]]
+  path     = "/api/surfline"
+  function = "surfline"

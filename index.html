@@ -3402,68 +3402,242 @@ function buildNDBCCard(station) {
     </div>`;
 }
 
+// ── Surfline spot list (LA County) ────────────────────────────────────────
+const SURFLINE_SPOTS_DATA = [
+  { name: 'Zuma Beach',          region: 'N. Malibu',        spotId: '5afb6566bb6fd9001a250fbb', url: 'https://www.surfline.com/surf-report/zuma-beach/5afb6566bb6fd9001a250fbb' },
+  { name: 'Malibu — 1st Point',  region: 'Malibu',           spotId: '584204214e65fad6a7709b9f', url: 'https://www.surfline.com/surf-report/malibu-first-point/584204214e65fad6a7709b9f' },
+  { name: 'Santa Monica Beach',  region: 'Santa Monica Bay', spotId: '584204214e65fad6a7709bdf', url: 'https://www.surfline.com/surf-report/santa-monica-beach/584204214e65fad6a7709bdf' },
+  { name: 'Venice Beach',        region: 'SM Bay S.',        spotId: '5842041f4e65fad6a7708819', url: 'https://www.surfline.com/surf-report/venice-beach/5842041f4e65fad6a7708819' },
+  { name: 'El Porto',            region: 'Manhattan Beach',  spotId: '5842041f4e65fad6a7708906', url: 'https://www.surfline.com/surf-report/el-porto/5842041f4e65fad6a7708906' },
+  { name: 'Manhattan Beach Pier',region: 'South Bay',        spotId: '584204214e65fad6a7709c09', url: 'https://www.surfline.com/surf-report/manhattan-beach-pier/584204214e65fad6a7709c09' },
+  { name: 'Hermosa Beach Pier',  region: 'South Bay',        spotId: '5b17281e4a274e001a11fcc3', url: 'https://www.surfline.com/surf-report/hermosa-beach-pier/5b17281e4a274e001a11fcc3' },
+  { name: 'Redondo — Sapphire',  region: 'South Bay',        spotId: '584204214e65fad6a7709d0b', url: 'https://www.surfline.com/surf-report/sapphire-st-/584204214e65fad6a7709d0b' },
+];
+
+// ── Fetch one spot via Surfline edge function ─────────────────────────────
+async function fetchSurflineEdge(spotId) {
+  try {
+    const resp = await fetch(`/api/surfline?spotId=${spotId}`);
+    const json = await resp.json().catch(() => null);
+    if (!resp.ok) return { _proxyError: true, status: resp.status, code: json?.error };
+    return json;
+  } catch(e) {
+    return { _proxyError: true, status: 0, code: 'network_error', detail: e.message };
+  }
+}
+
+// ── Parse Surfline API response into display-ready object ─────────────────
+function parseSurflineData(data) {
+  if (!data || data.error || data._proxyError) return null;
+  try {
+    const { waveData, ratingData, condData, windData } = data;
+    const now = Date.now() / 1000;
+    const closest = (arr) => arr?.length
+      ? arr.reduce((p, c) => Math.abs(c.timestamp - now) < Math.abs(p.timestamp - now) ? c : p)
+      : null;
+
+    const wave   = closest(waveData?.data?.wave);
+    const rating = closest(ratingData?.data?.rating);
+    const wind   = closest(windData?.data?.wind);
+    const cond   = condData?.data?.conditions?.[0] || null;
+
+    const swells = (wave?.swells || []).filter(s => s.height > 0);
+    swells.sort((a, b) => (b.height * b.period) - (a.height * a.period));
+
+    const dirName = (d) => {
+      if (d == null) return '';
+      const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+      return dirs[Math.round(((d % 360) + 360) % 360 / 22.5) % 16];
+    };
+
+    const rtMap = { 0:'FLAT',1:'VERY POOR',2:'POOR',3:'POOR TO FAIR',4:'FAIR',5:'FAIR TO GOOD',6:'GOOD',7:'GOOD TO EPIC',8:'EPIC' };
+    const waveMin = wave ? Math.round((wave.surf?.min || 0)) : null;
+    const waveMax = wave ? Math.round((wave.surf?.max || 0)) : null;
+
+    return {
+      waveMin, waveMax,
+      rating: rtMap[Math.round(rating?.rating || 0)] || 'N/A',
+      ratingRaw: rating?.rating || 0,
+      swellHt: swells[0] ? swells[0].height.toFixed(1) : null,
+      swellPeriod: swells[0] ? swells[0].period : null,
+      swellDir: swells[0] ? dirName(swells[0].direction) : null,
+      swell2Ht: swells[1] ? swells[1].height.toFixed(1) : null,
+      swell2Period: swells[1] ? swells[1].period : null,
+      swell2Dir: swells[1] ? dirName(swells[1].direction) : null,
+      windSpeed: wind?.speed || null,
+      windDir: wind?.direction != null ? dirName(wind.direction) : null,
+      windType: wind?.directionType || null,
+      condSummary: cond?.headline || null,
+    };
+  } catch(e) {
+    console.warn('parseSurflineData error:', e);
+    return null;
+  }
+}
+
+// ── Build a single Surfline spot card ─────────────────────────────────────
+function buildSurflineCard(spot, parsed) {
+  const RATING_COLORS = {
+    'FLAT':'#888','VERY POOR':'#e05c00','POOR':'#e05c00','POOR TO FAIR':'#c49000',
+    'FAIR':'#c49000','FAIR TO GOOD':'#44bb66','GOOD':'#00cc88',
+    'GOOD TO EPIC':'#00eeff','EPIC':'#ff44ff','N/A':'#888'
+  };
+  if (!parsed) {
+    return `<div class="sl-card sl-card-unavail">
+      <div class="sl-card-stripe" style="background:var(--border)"></div>
+      <div class="sl-card-header"><div class="sl-card-name">${spot.name}</div><div class="sl-card-region">${spot.region}</div></div>
+      <div class="sl-card-body" style="text-align:center;padding:20px 12px">
+        <div style="font-size:24px;margin-bottom:8px">🌊</div>
+        <div style="font-family:var(--font-title);font-size:11px;letter-spacing:1px;color:var(--text-dim)">DATA UNAVAILABLE</div>
+      </div>
+      <div class="sl-card-footer">
+        <a href="${spot.url}" target="_blank" class="sl-card-fullbtn">View on Surfline ↗</a>
+      </div></div>`;
+  }
+  const rc  = RATING_COLORS[parsed.rating] || '#888';
+  const wtC = parsed.windType === 'Offshore' ? '#00cc88' : parsed.windType === 'Onshore' ? '#ff7722' : '#f0b800';
+  const wvColor = parsed.waveMax == null ? '#888' : parsed.waveMax <= 1 ? '#00cc88' : parsed.waveMax <= 3 ? '#c4c800' : parsed.waveMax <= 5 ? '#e07000' : '#cc3300';
+  const waveRange = parsed.waveMin != null ? `${parsed.waveMin}–${parsed.waveMax}` : '--';
+
+  return `<div class="sl-card">
+    <div class="sl-card-stripe" style="background:${rc}"></div>
+    <div class="sl-card-header">
+      <div><div class="sl-card-name">${spot.name}</div><div class="sl-card-region">${spot.region}</div></div>
+      <div class="sl-card-rating-pill" style="color:${rc};background:${rc}22">${parsed.rating}</div>
+    </div>
+    <div class="sl-card-body">
+      <div class="sl-card-wave-row">
+        <div>
+          <div class="sl-card-wave-ht" style="color:${wvColor}">${waveRange}</div>
+          <div class="sl-card-wave-unit">ft surf</div>
+        </div>
+      </div>
+      <div class="sl-card-section-label">SWELL</div>
+      <div class="sl-card-swell-wrap">
+        ${parsed.swellHt ? `<div class="sl-card-swell primary">
+          <span class="sl-swell-tag">PRIMARY</span>
+          ${parsed.swellHt}ft @ ${parsed.swellPeriod}s ${parsed.swellDir || ''}
+        </div>` : '<div style="font-size:11px;color:var(--text-dim)">No swell data</div>'}
+        ${parsed.swell2Ht ? `<div class="sl-card-swell secondary">
+          <span class="sl-swell-tag">SECONDARY</span>
+          ${parsed.swell2Ht}ft @ ${parsed.swell2Period}s ${parsed.swell2Dir || ''}
+        </div>` : ''}
+      </div>
+      <div class="sl-card-section-label">WIND</div>
+      <div class="sl-card-wind-row">
+        <div style="font-family:var(--mono);font-size:12px;color:${wtC}">
+          ${parsed.windSpeed != null ? Math.round(parsed.windSpeed) + ' mph ' + (parsed.windDir || '') : '--'}
+        </div>
+        ${parsed.windType ? `<span style="font-family:var(--font-title);font-size:10px;font-weight:700;color:${wtC};letter-spacing:0.5px">${parsed.windType.toUpperCase()}</span>` : ''}
+      </div>
+      ${parsed.condSummary ? `<div class="sl-card-cond">${parsed.condSummary}</div>` : ''}
+    </div>
+    <div class="sl-card-footer">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim)">SURFLINE.COM</div>
+      <a href="${spot.url}" target="_blank" class="sl-card-fullbtn">Full Report ↗</a>
+    </div>
+  </div>`;
+}
+
+// ── Section 09 loader — tries Surfline edge function, falls back to NDBC ──
 async function loadNDBCSection() {
   const el = document.getElementById('ndbc-section');
   if (!el) return;
-
   const now = new Date().toLocaleTimeString('en-US',
     { hour: '2-digit', minute: '2-digit', timeZone: 'America/Los_Angeles' });
 
-  // Show skeleton cards while loading
+  // Skeleton loader (8 cards — covers both Surfline count and NDBC count)
   el.innerHTML = `<div class="sl-card-grid">
     ${Array(5).fill(0).map(() => `
       <div class="sl-card sl-card-loading">
         <div class="sl-card-stripe" style="background:var(--border)"></div>
         <div class="sl-card-body" style="padding:20px 12px;text-align:center">
           <div class="loading-bar" style="margin:0 auto"><div class="loading-fill"></div></div>
+          <div style="margin-top:8px;font-size:10px;color:var(--text-dim)">PROBING SURFLINE EDGE…</div>
         </div>
       </div>`).join('')}
   </div>`;
 
-  try {
-    const resp = await fetch('/.netlify/functions/ndbc');
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const data = await resp.json();
-    if (!data.stations) throw new Error('No station data');
+  // ── 1. Probe the Surfline edge function with the first spot ──────────────
+  const probeResult = await fetchSurflineEdge(SURFLINE_SPOTS_DATA[0].spotId);
+  const surflineAvailable = !probeResult?._proxyError;
 
-    const stations = data.stations;
-    const successCount = stations.filter(s => s.obs).length;
+  if (surflineAvailable) {
+    // ── 2a. Edge function works — fetch remaining spots in parallel ─────────
+    console.log('✅ Surfline edge function: got through Cloudflare!');
+    const restResults = await Promise.all(
+      SURFLINE_SPOTS_DATA.slice(1).map(s => fetchSurflineEdge(s.spotId))
+    );
+    const results = [probeResult, ...restResults];
+    const parsed  = results.map(r => parseSurflineData(r));
+    const successCount = parsed.filter(Boolean).length;
 
-    // Update unified briefing
-    updateUBNDBC(stations);
-
-    const fetchedAt = data.fetched
-      ? new Date(data.fetched).toLocaleTimeString('en-US',
-          { hour: '2-digit', minute: '2-digit', timeZone: 'America/Los_Angeles' })
-      : now;
+    // Update unified briefing with Surfline data
+    updateUBSurfline(parsed);
 
     el.innerHTML = `
       <div class="sl-top-bar">
         <div>
-          <span style="font-family:var(--font-title);font-size:11px;font-weight:700;color:var(--brand-gold);letter-spacing:1.5px;text-transform:uppercase">NOAA NDBC · Real-Time Buoy Observations</span>
-          <span style="font-family:var(--mono);font-size:10px;color:rgba(212,186,107,0.6);margin-left:10px">via proxy · ${fetchedAt} PDT</span>
+          <span style="font-family:var(--font-title);font-size:11px;font-weight:700;color:var(--brand-gold);letter-spacing:1.5px;text-transform:uppercase">Surfline.com · Edge Proxy</span>
+          <span style="font-family:var(--mono);font-size:10px;color:rgba(212,186,107,0.6);margin-left:10px">via Cloudflare edge · ${now} PDT</span>
         </div>
         <div style="font-family:var(--mono);font-size:10px;color:${successCount > 0 ? '#00cc88' : '#e05c00'}">
-          ${successCount > 0 ? `● ${successCount}/${stations.length} buoys live` : '⚠ No buoy data'}
+          ${successCount > 0 ? `● ${successCount}/${SURFLINE_SPOTS_DATA.length} spots live` : '⚠ No spot data'}
         </div>
       </div>
       <div class="sl-card-grid">
-        ${stations.map(s => buildNDBCCard(s)).join('')}
+        ${SURFLINE_SPOTS_DATA.map((s, i) => buildSurflineCard(s, parsed[i])).join('')}
       </div>
-      <div style="margin-top:12px;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:0.5px">
-        DATA: NOAA NATIONAL DATA BUOY CENTER (NDBC) · REAL-TIME METEOROLOGICAL OBSERVATIONS · UNITS: FT, KTS, °F
-        · BUOYS: 46221 (SM BASIN) · 46222 (SAN PEDRO CH.) · 46253 (SAN PEDRO N.) · 46025 (OUTER SM BAY) · 46086 (SAN CLEMENTE)
+      <div style="margin-top:10px;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:0.5px">
+        DATA: SURFLINE.COM · EDGE PROXY: /api/surfline · UNITS: FT, MPH
       </div>`;
 
-  } catch (e) {
-    console.error('NDBC section error:', e);
-    updateUBNDBC(null);
-    el.innerHTML = `
-      <div style="background:var(--brand-red-bg);border:1px solid rgba(237,26,59,0.2);border-left:4px solid var(--brand-red);border-radius:6px;padding:14px 16px;font-size:13px;color:var(--text)">
-        <strong style="font-family:var(--font-title);font-size:14px;color:var(--brand-red-dark)">NDBC Data Unavailable</strong><br>
-        Could not reach the NDBC proxy. Make sure <code>netlify/functions/ndbc.js</code> is deployed.
-        You can <a href="https://www.ndbc.noaa.gov" target="_blank" style="color:var(--brand-gold)">view buoy data directly at ndbc.noaa.gov ↗</a>
-      </div>`;
+  } else {
+    // ── 2b. Surfline still blocked — fall back to NDBC buoys ────────────────
+    const blocked = probeResult?.code === 'surfline_blocked' || probeResult?.status === 403 || probeResult?.status === 429;
+    console.warn('⚠ Surfline edge probe failed:', probeResult?.code, probeResult?.status, '→ falling back to NDBC');
+
+    try {
+      const resp = await fetch('/.netlify/functions/ndbc');
+      if (!resp.ok) throw new Error(`NDBC HTTP ${resp.status}`);
+      const data = await resp.json();
+      if (!data.stations) throw new Error('No station data');
+
+      const stations = data.stations;
+      const successCount = stations.filter(s => s.obs).length;
+      updateUBNDBC(stations);
+
+      const fetchedAt = data.fetched
+        ? new Date(data.fetched).toLocaleTimeString('en-US',
+            { hour: '2-digit', minute: '2-digit', timeZone: 'America/Los_Angeles' })
+        : now;
+
+      el.innerHTML = `
+        <div class="sl-top-bar">
+          <div>
+            <span style="font-family:var(--font-title);font-size:11px;font-weight:700;color:var(--brand-gold);letter-spacing:1.5px;text-transform:uppercase">NOAA NDBC · Nearshore Buoy Observations</span>
+            <span style="font-family:var(--mono);font-size:10px;color:rgba(212,186,107,0.6);margin-left:10px">· ${fetchedAt} PDT</span>
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:${successCount > 0 ? '#00cc88' : '#e05c00'}">
+            ${blocked ? '⚠ Surfline blocked → ' : ''}${successCount > 0 ? `● ${successCount}/${stations.length} buoys live` : '⚠ No buoy data'}
+          </div>
+        </div>
+        <div class="sl-card-grid">
+          ${stations.map(s => buildNDBCCard(s)).join('')}
+        </div>
+        <div style="margin-top:12px;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:0.5px">
+          DATA: NOAA NDBC · REAL-TIME OBSERVATIONS · UNITS: FT, KTS, °F
+          · 46221 SM BASIN · 46222 SAN PEDRO CH. · 46253 SAN PEDRO N. · 46025 OUTER SM BAY · 46086 SAN CLEMENTE
+        </div>`;
+
+    } catch(e) {
+      updateUBNDBC(null);
+      el.innerHTML = `
+        <div style="background:var(--brand-red-bg);border:1px solid rgba(237,26,59,0.2);border-left:4px solid var(--brand-red);border-radius:6px;padding:14px 16px;font-size:13px;color:var(--text)">
+          <strong style="font-family:var(--font-title);font-size:14px;color:var(--brand-red-dark)">Data Unavailable</strong><br>
+          Both Surfline edge function and NDBC proxy failed. Check Netlify function deployments.
+        </div>`;
+    }
   }
 }
 
@@ -3878,6 +4052,39 @@ function buildUnifiedBriefing(nws, marine, atmos, tides, waterTempStr, swellRisk
         <span>WAVECAST.COM/SOCAL VIA PROXY</span>
       </div>
     </div>`;
+}
+
+// Update unified briefing with Surfline data (when edge function succeeds)
+function updateUBSurfline(parsedSpots) {
+  const el = document.getElementById('ub-ndbc-content');
+  if (!el) return;
+  // Update label to show Surfline source
+  const row = document.getElementById('ub-ndbc-row');
+  if (row) {
+    const lbl = row.querySelector('.ub-row-label');
+    if (lbl) lbl.textContent = '🏄 Surfline Spot Conditions · surfline.com (edge proxy)';
+  }
+  if (!parsedSpots || parsedSpots.every(p => p === null)) {
+    el.innerHTML = `<span style="color:rgba(255,255,255,0.4)">Surfline data unavailable</span>`;
+    return;
+  }
+  const RATING_COLORS = { 'FLAT':'#aaa','POOR':'#e05c00','POOR TO FAIR':'#c49000','FAIR':'#c49000','FAIR TO GOOD':'#00aa66','GOOD':'#00cc88','GOOD TO EPIC':'#00eeff','EPIC':'#ff44ff' };
+  el.outerHTML = `<div id="ub-ndbc-content">
+    ${SURFLINE_SPOTS_DATA.map((s, i) => {
+      const p = parsedSpots[i];
+      if (!p) return `<div class="ub-spot-row"><div class="ub-spot-name">${s.name}</div><span class="ub-spot-pill" style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.4)">NO DATA</span></div>`;
+      const rc = RATING_COLORS[(p.rating||'').toUpperCase()] || '#aaa';
+      const wtColor = p.windType === 'Offshore' ? '#00cc88' : p.windType === 'Onshore' ? '#ff7722' : '#f0b800';
+      return `<div class="ub-spot-row">
+        <div class="ub-spot-name">${s.name}</div>
+        <span class="ub-spot-pill" style="background:rgba(255,255,255,0.08);color:#fff">${p.waveMin ?? '--'}–${p.waveMax ?? '--'} ft</span>
+        <span class="ub-spot-pill" style="background:${rc}22;color:${rc}">${p.rating || '--'}</span>
+        ${p.windType ? `<span class="ub-spot-pill" style="background:${wtColor}22;color:${wtColor}">${p.windType}</span>` : ''}
+        <span style="font-family:var(--mono);font-size:10px;color:rgba(255,255,255,0.4)">${p.swellHt || '--'}ft @ ${p.swellPeriod || '--'}s ${p.swellDir || ''}</span>
+        <a href="${s.url}" target="_blank" style="font-family:var(--mono);font-size:10px;color:var(--brand-gold);margin-left:auto">↗</a>
+      </div>`;
+    }).join('')}
+  </div>`;
 }
 
 // Update unified briefing NDBC subsection after async load
