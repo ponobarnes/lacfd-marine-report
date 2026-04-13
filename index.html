@@ -2375,38 +2375,41 @@ async function fetchNWSForecast() {
     const gridResp = await fetch(`https://api.weather.gov/gridpoints/${gridId}/${gridX},${gridY}`);
     const gridData = await gridResp.json();
 
-    // Fetch alerts directly for the specific NWS coastal and marine zones
-    // that cover LA County beaches — this avoids inland/mountain/desert zones entirely
-    //
-    // NWS Zone codes for LA County operational area:
-    //   CAZ041 — Los Angeles County Beaches (coastal zone)
-    //   CAZ042 — Santa Monica Bay (coastal zone)
-    //   CAZ043 — Los Angeles County Coast (coastal zone)
-    //   PZZ150 — Santa Monica Bay (marine zone)
-    //   PZZ155 — San Pedro Bay (marine zone)
-    //   PZZ160 — San Pedro Channel (marine zone)
-    //   PZZ775 — Point Conception to Santa Monica Bay (offshore)
-    //   PZZ780 — Santa Monica Bay to San Clemente (offshore)
-    const COASTAL_ZONES = ['CAZ041','CAZ042','CAZ043','PZZ150','PZZ155','PZZ160','PZZ770','PZZ775','PZZ780'];
+    // Fetch ALL active alerts from NWS LOX (Los Angeles/Oxnard) office only.
+    // Querying by office ensures we never get alerts from Seattle, Portland,
+    // or any other regional NWS office — only alerts issued by LOX.
+    const alertsResp = await fetch('https://api.weather.gov/alerts/active?office=LOX');
+    const alertsJson = alertsResp.ok ? await alertsResp.json() : { features: [] };
+    const allLOXAlerts = alertsJson.features || [];
 
-    // Fetch alerts for each zone in parallel, then merge & deduplicate
-    const zoneAlertFetches = COASTAL_ZONES.map(zone =>
-      fetch(`https://api.weather.gov/alerts/active/zone/${zone}`)
-        .then(r => r.json())
-        .catch(() => ({ features: [] }))
-    );
-    const zoneResults = await Promise.all(zoneAlertFetches);
+    // LOX covers all of Southern California including inland zones (mountains,
+    // desert valleys). Keep only coastal/marine UGC zones relevant to lifeguard ops:
+    //   CAZ041–CAZ043  LA County beaches & coast
+    //   CAZ044–CAZ047  additional LA County coastal zones
+    //   CAZ546–CAZ553  split LA County coastal zones
+    //   CAZ048–CAZ050  Orange County coast
+    //   CAZ554–CAZ556  split Orange County coastal zones
+    //   CAZ518–CAZ519  Ventura County coast
+    //   PZZ150         Pt Conception to Santa Monica Bay (inshore)
+    //   PZZ155         San Pedro Channel (inshore)
+    //   PZZ160         San Clemente Island waters
+    //   PZZ170         Santa Barbara Island waters
+    //   PZZ775         Pt Conception to Santa Monica Bay (outer)
+    //   PZZ780         Santa Monica Bay to Ensenada (outer)
+    const COASTAL_UGC = new Set([
+      'CAZ041','CAZ042','CAZ043','CAZ044','CAZ045','CAZ046','CAZ047',
+      'CAZ546','CAZ547','CAZ548','CAZ549','CAZ550','CAZ551','CAZ552','CAZ553',
+      'CAZ048','CAZ049','CAZ050',
+      'CAZ554','CAZ555','CAZ556',
+      'CAZ018','CAZ019','CAZ518','CAZ519',
+      'PZZ150','PZZ155','PZZ160','PZZ165','PZZ170',
+      'PZZ775','PZZ776','PZZ780',
+    ]);
 
-    // Collect all alerts, deduplicate by ID
-    const seen = new Set();
-    const allZoneAlerts = [];
-    zoneResults.forEach(result => {
-      (result.features || []).forEach(f => {
-        if (!seen.has(f.id)) {
-          seen.add(f.id);
-          allZoneAlerts.push(f);
-        }
-      });
+    // Pre-filter: only keep alerts that touch at least one coastal/marine zone
+    const allZoneAlerts = allLOXAlerts.filter(f => {
+      const zones = f.properties?.geocode?.UGC || [];
+      return zones.some(z => COASTAL_UGC.has(z));
     });
 
     // Event type allowlist — only alert types relevant to ocean lifeguards
