@@ -133,15 +133,14 @@
 
   .report-title {
     font-family: var(--font-title);
-    font-size: 20px;
+    font-size: clamp(13px, 2.8vw, 20px);
     font-weight: 900;
     color: #fff;
-    line-height: 1.1;
-    letter-spacing: 1px;
+    line-height: 1.15;
+    letter-spacing: 0.5px;
     text-transform: uppercase;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-word;
   }
 
   .report-subtitle {
@@ -150,9 +149,15 @@
     font-weight: 400;
     color: rgba(255,255,255,0.65);
     margin-top: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+  }
+
+  @media (max-width: 480px) {
+    .report-label { font-size: 9px; letter-spacing: 1px; }
+    .report-title { font-size: 13px; }
+    .report-subtitle { font-size: 10px; }
+    .header-inner { gap: 8px; padding: 8px 12px; }
+    .agency-seal, .agency-seal img { width: 44px; height: 44px; }
   }
 
   .header-meta { flex-shrink: 0; text-align: right; }
@@ -1786,8 +1791,8 @@
     </div>
     <div class="header-titles">
       <div class="report-label">// Marine Predictive Services Report</div>
-      <div class="report-title">Los Angeles County — Lifeguard Division</div>
-      <div class="report-subtitle">Coastal Operations Weather & Sea State Analysis · Southern California Coast</div>
+      <div class="report-title">Los Angeles County Fire Department Lifeguard Division</div>
+      <div class="report-subtitle">Coastal Operations Weather &amp; Sea State Analysis · Southern California Coast</div>
     </div>
     <div class="header-meta">
       <div class="issue-time">ISSUED: <span id="issue-time">--:-- PDT</span></div>
@@ -2364,7 +2369,7 @@ async function fetchOpenMeteoMarine() {
     const url = `https://marine-api.open-meteo.com/v1/marine?` +
       `latitude=${MARINE_LAT}&longitude=${MARINE_LON}` +
       `&hourly=wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period,wind_wave_height,wind_wave_direction,wind_wave_period,ocean_current_velocity,ocean_current_direction` +
-      `&daily=wave_height_max,wave_direction_dominant,wave_period_max,swell_wave_height_max,swell_wave_direction_dominant,swell_wave_period_max` +
+      `&daily=wave_height_max,wave_height_min,wave_direction_dominant,wave_period_max,swell_wave_height_max,swell_wave_height_min,swell_wave_direction_dominant,swell_wave_period_max` +
       `&wind_speed_unit=mph&length_unit=imperial&timezone=America%2FLos_Angeles&forecast_days=3`;
 
     const resp = await fetch(url);
@@ -2894,6 +2899,17 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
   marineHTML += `</tbody></table>`;
 
   // Beach zone assessments — linked to PATROL_ZONES
+  const dayMinWave = marine.daily.wave_height_min ? marine.daily.wave_height_min[0] : null;
+  const dayMaxWaveZ = marine.daily.wave_height_max ? marine.daily.wave_height_max[0] : null;
+  const dayMinSwell = marine.daily.swell_wave_height_min ? marine.daily.swell_wave_height_min[0] : null;
+  const dayMaxSwellZ = marine.daily.swell_wave_height_max ? marine.daily.swell_wave_height_max[0] : null;
+  const waveRangeStr = dayMaxWaveZ
+    ? (dayMinWave ? `${dayMinWave.toFixed(1)}–${dayMaxWaveZ.toFixed(1)}` : `–${dayMaxWaveZ.toFixed(1)}`) + ' FT'
+    : (waveHt ? waveHt.toFixed(1) + ' FT' : '--');
+  const swellRangeStr = dayMaxSwellZ
+    ? (dayMinSwell ? `${dayMinSwell.toFixed(1)}–${dayMaxSwellZ.toFixed(1)}` : `–${dayMaxSwellZ.toFixed(1)}`) + ' FT'
+    : '--';
+
   let zonesHTML = `<div class="beach-zones fade-in-3">`;
   PATROL_ZONES.forEach(bz => {
     const risk = getSwellRiskLevel(waveHt || 0);
@@ -2901,8 +2917,9 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
     zonesHTML += `<div class="beach-zone" data-zone-id="${bz.id}" onclick="selectZone('${bz.id}')" style="cursor:pointer">
       <div class="bz-name">${bz.name}</div>
       <div class="bz-stat"><span class="bz-key">BOUNDS</span><span class="bz-val" style="font-size:10px">${bz.bounds.substring(0,30)}${bz.bounds.length>30?'…':''}</span></div>
-      <div class="bz-stat"><span class="bz-key">WAVES</span><span class="bz-val" style="color:${rColor}">${waveHt ? waveHt.toFixed(1) : '--'} FT</span></div>
-      <div class="bz-stat"><span class="bz-key">SWELL</span><span class="bz-val">${degToCardinal(swellDir)}</span></div>
+      <div class="bz-stat"><span class="bz-key">WAVE RANGE</span><span class="bz-val" style="color:${rColor}">${waveRangeStr}</span></div>
+      <div class="bz-stat"><span class="bz-key">SWELL RANGE</span><span class="bz-val" style="color:#00aaff">${swellRangeStr}</span></div>
+      <div class="bz-stat"><span class="bz-key">SWELL DIR</span><span class="bz-val">${degToCardinal(swellDir)}</span></div>
       <div class="bz-stat"><span class="bz-key">WIND</span><span class="bz-val">${Math.round(windSpd)} MPH ${degToCardinal(windDir)}</span></div>
       <div class="bz-rating"><div class="bz-rating-text" style="color:${rColor}">${risk.level} HAZARD</div></div>
       <div style="font-size:10px;color:var(--brand-red);margin-top:6px;font-weight:700;font-family:var(--font-title);letter-spacing:0.5px;text-transform:uppercase">TAP FOR ZONE REPORT →</div>
@@ -2936,22 +2953,26 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
   // Daily outlook table
   const days = ['TODAY', 'TOMORROW', 'DAY 3'];
   let dailyHTML = `<table class="data-table fade-in-4">
-    <thead><tr><th>DAY</th><th>MAX WAVE</th><th>MAX SWELL</th><th>SWELL DIR</th><th>WIND MAX</th><th>UV MAX</th><th>PRECIP</th></tr></thead>
+    <thead><tr><th>DAY</th><th>WAVE RANGE</th><th>SWELL RANGE</th><th>SWELL DIR</th><th>WIND MAX</th><th>UV MAX</th><th>PRECIP</th></tr></thead>
     <tbody>`;
   days.forEach((d, i) => {
     if (i >= marine.daily.time.length) return;
     const mxW = marine.daily.wave_height_max[i];
+    const mnW = marine.daily.wave_height_min ? marine.daily.wave_height_min[i] : null;
     const mxS = marine.daily.swell_wave_height_max[i];
+    const mnS = marine.daily.swell_wave_height_min ? marine.daily.swell_wave_height_min[i] : null;
     const sdDir = marine.daily.swell_wave_direction_dominant[i];
     const mxWind = atmos.daily.wind_speed_10m_max[i];
     const mxUV = atmos.daily.uv_index_max[i];
     const prec = atmos.daily.precipitation_sum[i];
     const dayRisk = getSwellRiskLevel(mxW || 0);
     const rColor = dayRisk.level==='LOW'?'var(--green)':dayRisk.level==='MODERATE'?'#c49000':dayRisk.level==='HIGH'?'#e05c00':'var(--brand-red)';
+    const waveRange = mxW ? (mnW ? `${mnW.toFixed(1)}–${mxW.toFixed(1)}` : `–${mxW.toFixed(1)}`) + ' ft' : '--';
+    const swellRange = mxS ? (mnS ? `${mnS.toFixed(1)}–${mxS.toFixed(1)}` : `–${mxS.toFixed(1)}`) + ' ft' : '--';
     dailyHTML += `<tr>
       <td style="font-family:var(--cond);font-weight:700;font-size:13px;letter-spacing:1px;color:var(--text-bright)">${d}</td>
-      <td class="val" style="color:${rColor}">${mxW ? mxW.toFixed(1) : '--'} ft</td>
-      <td style="color:#00aaff">${mxS ? mxS.toFixed(1) : '--'} ft</td>
+      <td class="val" style="color:${rColor}">${waveRange}</td>
+      <td style="color:#00aaff">${swellRange}</td>
       <td>${degToCardinal(sdDir)}</td>
       <td>${mxWind ? Math.round(mxWind) : '--'} mph</td>
       <td style="color:${mxUV>=8?'var(--brand-red)':mxUV>=6?'#e05c00':mxUV>=3?'#c49000':'#00cc88'}">${mxUV ? Math.round(mxUV) : '--'}</td>

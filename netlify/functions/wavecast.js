@@ -116,6 +116,29 @@ function extractContent(html) {
     .replace(/\n{4,}/g, '\n\n\n')
     .trim();
 
+  // Strip known WaveCast boilerplate blocks that appear before the actual forecast:
+  // - Surf Charts nav links
+  // - Subscribe/notification prompt
+  const boilerplatePatterns = [
+    /Surf Charts for SoCal[\s\S]*?Get notified when this report is updated\.?/i,
+    /Subscribe to be notified:[\s\S]*?Get notified when this report is updated\.?/i,
+    /Rincon\s*\|[\s\S]*?Sunset Cliffs/i,
+    /Get notified when this report is updated\.?/i,
+  ];
+  for (const pattern of boilerplatePatterns) {
+    text = text.replace(pattern, '').trim();
+  }
+
+  // Remove any leading lines that look like nav links (short lines with | separators)
+  const lines = text.split('\n');
+  const firstRealLine = lines.findIndex(l => {
+    const t = l.trim();
+    return t.length > 60 && !t.includes('|');
+  });
+  if (firstRealLine > 0 && firstRealLine < 15) {
+    text = lines.slice(firstRealLine).join('\n').trim();
+  }
+
   return text;
 }
 
