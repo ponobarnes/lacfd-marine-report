@@ -3390,16 +3390,21 @@ function slRatingInfo(val) {
 async function fetchSurflineViaProxy(spotId) {
   try {
     const resp = await fetch(`/.netlify/functions/surfline?spotId=${spotId}`);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    return await resp.json();
+    const json = await resp.json().catch(() => null);
+    if (!resp.ok) {
+      // Pass structured error back so the UI can diagnose it
+      console.warn(`Surfline proxy [${spotId}] → HTTP ${resp.status}`, json);
+      return { _proxyError: true, status: resp.status, code: json?.error, detail: json?.detail };
+    }
+    return json;
   } catch(e) {
     console.warn(`Surfline proxy failed for ${spotId}:`, e.message);
-    return null;
+    return { _proxyError: true, status: 0, code: 'network_error', detail: e.message };
   }
 }
 
 function parseSurflineData(data) {
-  if (!data || data.error) return null;
+  if (!data || data.error || data._proxyError) return null;
   try {
     const { waveData, ratingData, condData, windData } = data;
     const now = Date.now() / 1000;
@@ -3605,11 +3610,27 @@ async function loadSurflineSection() {
     <div class="sl-card-grid">
       ${SURFLINE_SPOTS_DATA.map((s, i) => buildSurflineCard(s, parsed[i])).join('')}
     </div>
-    ${successCount === 0 ? `
-      <div style="background:var(--brand-red-bg);border:1px solid rgba(237,26,59,0.2);border-left:4px solid var(--brand-red);border-radius:6px;padding:14px 16px;margin-top:10px;font-size:13px;color:var(--text)">
-        <strong style="font-family:var(--font-title);font-size:14px;color:var(--brand-red-dark)">Proxy Not Responding</strong><br>
-        Make sure you've deployed the <code>netlify/functions/surfline.js</code> file to your Netlify site. See the setup instructions below.
-      </div>` : ''}
+    ${successCount === 0 ? (() => {
+      // Diagnose the failure from the first error result we got back
+      const firstErr = results.find(r => r && r._proxyError);
+      const code = firstErr?.code || '';
+      const status = firstErr?.status || 0;
+      let title = 'Proxy Not Responding';
+      let msg = 'Make sure you\'ve deployed <code>netlify/functions/surfline.js</code> to your Netlify site and that it\'s connected via GitHub (not drag-and-drop).';
+      if (status === 404 || code === 'network_error') {
+        title = 'Function Not Found (404)';
+        msg = 'The Netlify function hasn\'t deployed yet. Check that your GitHub repo has <code>netlify/functions/surfline.js</code> and that Netlify is connected to the correct repo with base directory set.';
+      } else if (code === 'surfline_blocked' || status === 403 || status === 429) {
+        title = `Surfline Blocking Proxy (HTTP ${status})`;
+        msg = 'Surfline\'s Cloudflare protection is rejecting requests from Netlify\'s servers. This is a known issue with cloud-hosted proxies. Consider using your NOAA buoy data (already live) as the nearshore source, or contact Surfline about API access.';
+      } else if (status === 502) {
+        title = 'Surfline API Error (502)';
+        msg = 'The proxy reached Surfline but their API returned an error. This may be a temporary outage — try reloading in a few minutes.';
+      }
+      return `<div style="background:var(--brand-red-bg);border:1px solid rgba(237,26,59,0.2);border-left:4px solid var(--brand-red);border-radius:6px;padding:14px 16px;margin-top:10px;font-size:13px;color:var(--text)">
+        <strong style="font-family:var(--font-title);font-size:14px;color:var(--brand-red-dark)">${title}</strong><br>${msg}
+      </div>`;
+    })() : ''}
     <div class="sl-api-note" style="margin-top:10px">
       DATA: SURFLINE.COM · PROXY: /.netlify/functions/surfline · SUBSCRIPTION REQUIRED
     </div>`;
