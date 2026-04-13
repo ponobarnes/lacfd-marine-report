@@ -2369,7 +2369,7 @@ async function fetchOpenMeteoMarine() {
     const url = `https://marine-api.open-meteo.com/v1/marine?` +
       `latitude=${MARINE_LAT}&longitude=${MARINE_LON}` +
       `&hourly=wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period,wind_wave_height,wind_wave_direction,wind_wave_period,ocean_current_velocity,ocean_current_direction` +
-      `&daily=wave_height_max,wave_height_min,wave_direction_dominant,wave_period_max,swell_wave_height_max,swell_wave_height_min,swell_wave_direction_dominant,swell_wave_period_max` +
+      `&daily=wave_height_max,wave_direction_dominant,wave_period_max,swell_wave_height_max,swell_wave_direction_dominant,swell_wave_period_max` +
       `&wind_speed_unit=mph&length_unit=imperial&timezone=America%2FLos_Angeles&forecast_days=3`;
 
     const resp = await fetch(url);
@@ -2607,6 +2607,33 @@ function generateNarrative(marine, atmos, tides, nws) {
 function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
   const now = new Date();
   const hi = getCurrentHourIndex(marine.hourly.time);
+
+  // Calculate today's min wave/swell from hourly data (Open-Meteo Marine doesn't provide daily min)
+  const todayStr = marine.hourly.time[0]?.substring(0, 10);
+  const todayHourlyWaves = marine.hourly.time
+    .map((t, i) => t.startsWith(todayStr) ? marine.hourly.wave_height[i] : null)
+    .filter(v => v !== null && v > 0);
+  const todayHourlySwells = marine.hourly.time
+    .map((t, i) => t.startsWith(todayStr) ? marine.hourly.swell_wave_height[i] : null)
+    .filter(v => v !== null && v > 0);
+  const calcDayMinWave  = todayHourlyWaves.length  ? Math.min(...todayHourlyWaves)  : null;
+  const calcDayMinSwell = todayHourlySwells.length ? Math.min(...todayHourlySwells) : null;
+
+  // Do the same for tomorrow (index 1) and day 3 (index 2)
+  const dayMins = [0, 1, 2].map(dayOffset => {
+    const dayKey = marine.daily.time?.[dayOffset];
+    if (!dayKey) return { wave: null, swell: null };
+    const wv = marine.hourly.time
+      .map((t, i) => t.startsWith(dayKey) ? marine.hourly.wave_height[i] : null)
+      .filter(v => v !== null && v > 0);
+    const sw = marine.hourly.time
+      .map((t, i) => t.startsWith(dayKey) ? marine.hourly.swell_wave_height[i] : null)
+      .filter(v => v !== null && v > 0);
+    return {
+      wave:  wv.length ? Math.min(...wv) : null,
+      swell: sw.length ? Math.min(...sw) : null,
+    };
+  });
 
   // Current conditions
   const waveHt = marine.hourly.wave_height[hi];
@@ -2899,10 +2926,10 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
   marineHTML += `</tbody></table>`;
 
   // Beach zone assessments — linked to PATROL_ZONES
-  const dayMinWave = marine.daily.wave_height_min ? marine.daily.wave_height_min[0] : null;
-  const dayMaxWaveZ = marine.daily.wave_height_max ? marine.daily.wave_height_max[0] : null;
-  const dayMinSwell = marine.daily.swell_wave_height_min ? marine.daily.swell_wave_height_min[0] : null;
-  const dayMaxSwellZ = marine.daily.swell_wave_height_max ? marine.daily.swell_wave_height_max[0] : null;
+  const dayMinWave  = dayMins[0].wave;
+  const dayMaxWaveZ = marine.daily.wave_height_max?.[0] ?? null;
+  const dayMinSwell = dayMins[0].swell;
+  const dayMaxSwellZ = marine.daily.swell_wave_height_max?.[0] ?? null;
   const waveRangeStr = dayMaxWaveZ
     ? (dayMinWave ? `${dayMinWave.toFixed(1)}–${dayMaxWaveZ.toFixed(1)}` : `–${dayMaxWaveZ.toFixed(1)}`) + ' FT'
     : (waveHt ? waveHt.toFixed(1) + ' FT' : '--');
@@ -2958,9 +2985,9 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
   days.forEach((d, i) => {
     if (i >= marine.daily.time.length) return;
     const mxW = marine.daily.wave_height_max[i];
-    const mnW = marine.daily.wave_height_min ? marine.daily.wave_height_min[i] : null;
+    const mnW = dayMins[i]?.wave ?? null;
     const mxS = marine.daily.swell_wave_height_max[i];
-    const mnS = marine.daily.swell_wave_height_min ? marine.daily.swell_wave_height_min[i] : null;
+    const mnS = dayMins[i]?.swell ?? null;
     const sdDir = marine.daily.swell_wave_direction_dominant[i];
     const mxWind = atmos.daily.wind_speed_10m_max[i];
     const mxUV = atmos.daily.uv_index_max[i];
