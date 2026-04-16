@@ -67,11 +67,7 @@
 
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-  /* Prevent ANY element from making the page wider than the viewport */
-  html {
-    overflow-x: hidden;
-    max-width: 100vw;
-  }
+  html { overflow-x: hidden; }
 
   body {
     background: var(--bg);
@@ -81,8 +77,6 @@
     line-height: 1.5;
     min-height: 100vh;
     overflow-x: hidden;
-    max-width: 100vw;
-    width: 100%;
   }
 
   /* === HEADER === */
@@ -373,8 +367,6 @@
     padding: 16px 12px 32px;
     display: grid;
     gap: 20px;
-    /* Contain any overflowing children so they don't bust the viewport */
-    overflow-x: hidden;
   }
 
   /* Section header */
@@ -573,7 +565,6 @@
   }
   .data-table {
     width: 100%;
-    min-width: 480px; /* keeps columns readable; wrapper handles overflow */
     border-collapse: collapse;
     font-size: 14px;
   }
@@ -1485,6 +1476,9 @@
   }
 
   .sl-card-grid {
+    /* Belt-and-suspenders: never allow grid to overflow the panel */
+    width: 100%;
+    min-width: 0;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
@@ -1802,6 +1796,9 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 8px;
+    /* Prevent grid from stretching wider than its container */
+    width: 100%;
+    min-width: 0;
   }
   .ub-cell {
     background: rgba(255,255,255,0.05);
@@ -1880,8 +1877,13 @@
     color: rgba(255,255,255,0.35); padding: 8px 0;
     display: flex; align-items: center; gap: 8px;
   }
-  @media (max-width: 600px) {
+  @media (max-width: 700px) {
     .ub-conditions-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 380px) {
+    .ub-conditions-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 600px) {
     .ub-masthead { flex-direction: column; }
   }
 </style>
@@ -2924,7 +2926,7 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
   // Hazard overview
   const hazardCards = [
     {
-      icon: '🌊', label: 'COMBINED WAVES',
+      icon: '🌊', label: 'COMBINED SEAS',
       value: waveHt ? waveHt.toFixed(1) : '--', unit: 'FEET',
       status: swellRisk.level, cls: swellRisk.class
     },
