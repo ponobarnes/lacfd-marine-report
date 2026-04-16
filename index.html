@@ -67,6 +67,12 @@
 
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
+  /* Prevent ANY element from making the page wider than the viewport */
+  html {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
   body {
     background: var(--bg);
     color: var(--text);
@@ -75,6 +81,8 @@
     line-height: 1.5;
     min-height: 100vh;
     overflow-x: hidden;
+    max-width: 100vw;
+    width: 100%;
   }
 
   /* === HEADER === */
@@ -360,10 +368,13 @@
   /* === MAIN LAYOUT === */
   .main {
     max-width: 900px;
+    width: 100%;
     margin: 0 auto;
     padding: 16px 12px 32px;
     display: grid;
     gap: 20px;
+    /* Contain any overflowing children so they don't bust the viewport */
+    overflow-x: hidden;
   }
 
   /* Section header */
@@ -471,6 +482,10 @@
 
   @media (max-width: 480px) {
     .hazard-grid { grid-template-columns: repeat(2, 1fr); }
+    /* Tighter side padding on small phones — maximises usable width */
+    .main { padding: 10px 8px 24px; }
+    .panel { padding: 10px 8px; }
+    .section-header { padding: 12px 10px; }
   }
 
   .hazard-card {
@@ -549,8 +564,16 @@
   }
 
   /* === DATA TABLE === */
+  /* Wrapper lets wide tables scroll horizontally on mobile
+     instead of busting the page layout */
+  .data-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
   .data-table {
     width: 100%;
+    min-width: 480px; /* keeps columns readable; wrapper handles overflow */
     border-collapse: collapse;
     font-size: 14px;
   }
@@ -3006,7 +3029,7 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
     ['UV Index', `${uvi}`, uvRisk.level],
   ];
 
-  let atmosHTML = `<table class="data-table">
+  let atmosHTML = `<div class="data-table-wrap"><table class="data-table">
     <thead><tr><th>PARAMETER</th><th>VALUE</th><th>NOTE</th></tr></thead>
     <tbody>`;
   atmosRows.forEach(r => {
@@ -3017,7 +3040,7 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
       <td class="${isWarn ? 'warn-val' : ''}">${r[2]}</td>
     </tr>`;
   });
-  atmosHTML += `</tbody></table>`;
+  atmosHTML += `</tbody></table></div>`;
 
   // Marine details
   const marineRows = [
@@ -3032,7 +3055,7 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
     ['Daily Max Swell', marine.daily.swell_wave_height_max[0] ? marine.daily.swell_wave_height_max[0].toFixed(1) + ' ft' : '--', 'expected peak'],
   ];
 
-  let marineHTML = `<table class="data-table">
+  let marineHTML = `<div class="data-table-wrap"><table class="data-table">
     <thead><tr><th>PARAMETER</th><th>VALUE</th><th>NOTE</th></tr></thead>
     <tbody>`;
   marineRows.forEach(r => {
@@ -3043,7 +3066,7 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
       <td class="${isWarn ? 'warn-val' : ''}">${r[2]}</td>
     </tr>`;
   });
-  marineHTML += `</tbody></table>`;
+  marineHTML += `</tbody></table></div>`;
 
   // Beach zone assessments — linked to PATROL_ZONES
   const dayMinWave  = dayMins[0].wave;
@@ -3081,7 +3104,7 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
   let nwsText = '';
   if (nws && nws.forecastData && nws.forecastData.properties && nws.forecastData.properties.periods) {
     const periods = nws.forecastData.properties.periods.slice(0,6);
-    nwsText = `<table class="data-table fade-in-4">
+    nwsText = `<div class="data-table-wrap"><table class="data-table fade-in-4">
       <thead><tr><th>PERIOD</th><th>TEMP</th><th>WIND</th><th>CONDITIONS</th></tr></thead>
       <tbody>`;
     periods.forEach(p => {
@@ -3092,14 +3115,14 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
         <td>${p.shortForecast}</td>
       </tr>`;
     });
-    nwsText += `</tbody></table>`;
+    nwsText += `</tbody></table></div>`;
   } else {
     nwsText = `<div class="error-note">NWS point forecast data unavailable for this location.</div>`;
   }
 
   // Daily outlook table
   const days = ['TODAY', 'TOMORROW', 'DAY 3'];
-  let dailyHTML = `<table class="data-table fade-in-4">
+  let dailyHTML = `<div class="data-table-wrap"><table class="data-table fade-in-4">
     <thead><tr><th>DAY</th><th>WAVE RANGE</th><th>SWELL RANGE</th><th>SWELL DIR</th><th>WIND MAX</th><th>UV MAX</th><th>PRECIP</th></tr></thead>
     <tbody>`;
   days.forEach((d, i) => {
@@ -3126,7 +3149,7 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
       <td>${prec ? prec.toFixed(2) + '"' : '0.00"'}</td>
     </tr>`;
   });
-  dailyHTML += `</tbody></table>`;
+  dailyHTML += `</tbody></table></div>`;
 
   // NDBC buoy section — built async, placeholder here, replaced after load
   const ndbcNote = `<div id="ndbc-section"><div class="loading-state" style="padding:24px"><div class="loading-bar"><div class="loading-fill"></div></div><div style="margin-top:8px">FETCHING NOAA NDBC BUOY DATA...</div></div></div>`;
