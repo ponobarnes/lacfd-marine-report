@@ -134,6 +134,13 @@
   }
 
   .report-title {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+  }
+
+  .title-dept {
     font-family: var(--font-title);
     font-size: clamp(13px, 2.8vw, 20px);
     font-weight: 900;
@@ -141,8 +148,18 @@
     line-height: 1.15;
     letter-spacing: 0.5px;
     text-transform: uppercase;
-    white-space: normal;
-    word-break: break-word;
+    white-space: nowrap;
+  }
+
+  .title-div {
+    font-family: var(--font-title);
+    font-weight: 900;
+    color: var(--brand-gold);
+    line-height: 1.1;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    /* font-size set by fitHeaderTitle() JS */
   }
 
   .report-subtitle {
@@ -156,7 +173,6 @@
 
   @media (max-width: 480px) {
     .report-label { font-size: 9px; letter-spacing: 1px; }
-    .report-title { font-size: 13px; }
     .report-subtitle { font-size: 10px; }
     .header-inner { gap: 8px; padding: 8px 12px; }
     .agency-seal, .agency-seal img { width: 44px; height: 44px; }
@@ -1898,12 +1914,14 @@
     </div>
     <div class="header-titles">
       <div class="report-label">// Marine Predictive Services Report</div>
-      <div class="report-title">Los Angeles County Fire Department Lifeguard Division</div>
+      <div class="report-title">
+        <span class="title-dept" id="header-dept">Los Angeles County Fire Department</span>
+        <span class="title-div"  id="header-div">Lifeguard Division</span>
+      </div>
       <div class="report-subtitle">Coastal Operations Weather &amp; Sea State Analysis · Southern California Coast</div>
     </div>
     <div class="header-meta">
       <div class="issue-time">ISSUED: <span id="issue-time">--:-- PDT</span></div>
-      <div class="issue-time">VALID: <span id="valid-period">Loading...</span></div>
       <div style="margin-top:8px"><span class="validity-badge" id="cycle-tag">MORNING CYCLE</span></div>
       <div style="margin-top:8px">
         <span class="live-indicator"><span class="live-dot"></span>LIVE DATA</span>
@@ -1915,16 +1933,12 @@
     <div class="header-ticker-track">
       <span class="tk-item">ISSUED: <span id="ticker-issue-time">--:-- PDT</span></span>
       <span class="tk-sep">·</span>
-      <span class="tk-item">VALID: <span id="ticker-valid-period">Loading…</span></span>
-      <span class="tk-sep">·</span>
       <span id="ticker-cycle-tag" class="tk-badge">MORNING CYCLE</span>
       <span class="tk-sep">·</span>
       <span class="tk-live"><span class="tk-live-dot"></span>LIVE</span>
       <!-- duplicate set for seamless loop -->
       <span class="tk-sep" style="margin-left:24px">·</span>
       <span class="tk-item">ISSUED: <span id="ticker-issue-time-2">--:-- PDT</span></span>
-      <span class="tk-sep">·</span>
-      <span class="tk-item">VALID: <span id="ticker-valid-period-2">Loading…</span></span>
       <span class="tk-sep">·</span>
       <span id="ticker-cycle-tag-2" class="tk-badge">MORNING CYCLE</span>
       <span class="tk-sep">·</span>
@@ -2821,11 +2835,7 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
     {hour:'2-digit',minute:'2-digit',timeZone:'America/Los_Angeles'}) + ' PDT';
   document.getElementById('issue-time').textContent = issuedStr;
 
-  const validEnd = new Date(now); validEnd.setHours(validEnd.getHours()+12);
-  const validStr =
-    now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/Los_Angeles'}) + ' — ' +
-    validEnd.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/Los_Angeles'}) + ' PDT';
-  document.getElementById('valid-period').textContent = validStr;
+
 
   const hour = now.getHours();
   let cycle = hour < 10 ? 'MORNING CYCLE' : hour < 14 ? 'MIDDAY CYCLE' : hour < 18 ? 'AFTERNOON CYCLE' : 'EVENING CYCLE';
@@ -2835,9 +2845,7 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
   ['ticker-issue-time','ticker-issue-time-2'].forEach(id => {
     const el = document.getElementById(id); if (el) el.textContent = issuedStr;
   });
-  ['ticker-valid-period','ticker-valid-period-2'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.textContent = validStr;
-  });
+
   ['ticker-cycle-tag','ticker-cycle-tag-2'].forEach(id => {
     const el = document.getElementById(id); if (el) el.textContent = cycle;
   });
@@ -4267,6 +4275,31 @@ async function initReport() {
 
 // Auto-refresh every 15 minutes
 setInterval(initReport, 15 * 60 * 1000);
+
+// ── fitHeaderTitle ──────────────────────────────────────────────────────────
+// Scale #header-div ("Lifeguard Division") font-size so its rendered width
+// matches the width of #header-dept ("Los Angeles County Fire Department").
+function fitHeaderTitle() {
+  const dept = document.getElementById('header-dept');
+  const div  = document.getElementById('header-div');
+  if (!dept || !div) return;
+
+  const targetW = dept.offsetWidth;
+  if (targetW < 10) return; // not yet laid out
+
+  // Binary search between 8px and 120px
+  let lo = 8, hi = 120, mid;
+  for (let i = 0; i < 20; i++) {
+    mid = (lo + hi) / 2;
+    div.style.fontSize = mid + 'px';
+    if (div.offsetWidth < targetW) lo = mid;
+    else hi = mid;
+  }
+  div.style.fontSize = lo + 'px';
+}
+
+window.addEventListener('load',   fitHeaderTitle);
+window.addEventListener('resize', fitHeaderTitle);
 
 // Init on load
 initZoneSelector();
