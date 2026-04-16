@@ -195,7 +195,9 @@
       border-top: 1px solid rgba(212,186,107,0.25);
       overflow: hidden;
       width: 100%;
+      max-width: 100vw;
       position: relative;
+      contain: strict;
     }
 
     .header-ticker-track {
@@ -493,7 +495,15 @@
   @media (max-width: 480px) {
     .hazard-grid { grid-template-columns: repeat(2, 1fr); }
     /* Tighter side padding on small phones — maximises usable width */
-    .main { padding: 10px 8px 24px; }
+    /* Force .main to viewport width — prevents ticker/overflow pushing page wider */
+    .main {
+      padding: 10px 8px 24px;
+      width: 100vw;
+      max-width: 100vw;
+      margin-left: 0;
+      margin-right: 0;
+      box-sizing: border-box;
+    }
     .panel { padding: 10px 8px; }
     .section-header { padding: 12px 10px; }
   }
