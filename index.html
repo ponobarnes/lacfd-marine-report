@@ -154,7 +154,7 @@
   .title-div {
     font-family: var(--font-title);
     font-weight: 900;
-    color: var(--brand-gold);
+    color: #fff;
     line-height: 1.1;
     letter-spacing: 0.5px;
     text-transform: uppercase;
@@ -1284,7 +1284,9 @@
     color: var(--brand-gold);
     text-transform: uppercase;
     letter-spacing: 1.5px;
-    white-space: nowrap;
+    white-space: normal;
+    text-align: right;
+    line-height: 1.2;
     flex-shrink: 0;
   }
 
@@ -1901,6 +1903,7 @@
   }
   @media (max-width: 600px) {
     .ub-masthead { flex-direction: column; }
+    .ub-masthead-hide-mobile { display: none !important; }
   }
 </style>
 </head>
@@ -1961,7 +1964,7 @@
 <!-- LOCATION SELECTOR -->
 <div class="zone-selector-wrap" id="zone-selector-wrap">
   <div class="zone-selector-inner">
-    <div class="zone-selector-label">📍 SELECT ZONE</div>
+    <div class="zone-selector-label">SELECT<br>📍 ZONE</div>
     <div class="zone-chips" id="zone-chips">
       <!-- injected by JS -->
     </div>
@@ -3976,10 +3979,10 @@ function buildUnifiedBriefing(nws, marine, atmos, tides, waterTempStr, swellRisk
     <div class="ub-block">
       <div class="ub-masthead">
         <div>
-          <div class="ub-masthead-title">⚓ OPERATIONAL BRIEFING — ALL SOURCES</div>
-          <div class="ub-masthead-sub">LA COUNTY FIRE DEPT · LIFEGUARD DIVISION · MARINE PREDICTIVE SERVICES</div>
+          <div class="ub-masthead-title">OPERATIONAL BRIEFING — ALL SOURCES</div>
+          <div class="ub-masthead-sub ub-masthead-hide-mobile">LA COUNTY FIRE DEPT · LIFEGUARD DIVISION · MARINE PREDICTIVE SERVICES</div>
         </div>
-        <div class="ub-masthead-time">ISSUED: ${timeStr} PDT<br>
+        <div class="ub-masthead-time ub-masthead-hide-mobile">ISSUED: ${timeStr} PDT<br>
           <span style="font-size:9px;color:rgba(212,186,107,0.5)">AUTO-REFRESH: 15 MIN</span>
         </div>
       </div>
