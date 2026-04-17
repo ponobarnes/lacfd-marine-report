@@ -2453,54 +2453,40 @@ const NOAA_STATION = "9410840"; // Santa Monica tide gauge
 
 let reportData = {};
 
-async function fetchNWSForecast() {
+// ── NWS Marine Alerts — completely independent of the forecast fetch ──────
+// Runs in parallel so a slow/failed forecast grid call never blocks alerts.
+async function fetchNWSAlerts() {
+  // Coastal/land UGC zones relevant to lifeguard ops
+  const COASTAL_UGC = new Set([
+    'CAZ041','CAZ042','CAZ043','CAZ044','CAZ045','CAZ046','CAZ047',
+    'CAZ546','CAZ547','CAZ548','CAZ549','CAZ550','CAZ551','CAZ552','CAZ553',
+    'CAZ048','CAZ049','CAZ050',
+    'CAZ554','CAZ555','CAZ556',
+    'CAZ018','CAZ019','CAZ518','CAZ519',
+  ]);
+
+  // All known LOX-area marine PZZ zones — broad net to catch any SCA/warning.
+  // Includes inshore, nearshore, offshore, and island zones.
+  const MARINE_ZONES = [
+    'PZZ150','PZZ155','PZZ160','PZZ165','PZZ170','PZZ173',
+    'PZZ645','PZZ650','PZZ655','PZZ673','PZZ676',
+    'PZZ775','PZZ776','PZZ780',
+  ].join(',');
+
+  const ALLOWED_EVENTS = [
+    'high surf','surf','rip current','beach hazards','coastal flood',
+    'marine weather statement','special marine warning','marine wind warning',
+    'small craft advisory','gale warning','storm warning',
+    'hurricane force wind warning','dense fog advisory','coastal hazard message',
+    'wind advisory','wind warning','hazardous seas',
+    'tsunami warning','tsunami watch','tsunami advisory','tsunami statement',
+    'tropical storm warning','tropical storm watch','hurricane warning','hurricane watch',
+    'ashfall advisory','brisk wind advisory','lake wind advisory',
+  ];
+
   try {
-    // Get grid point
-    const pointResp = await fetch(`https://api.weather.gov/points/${MARINE_LAT},${MARINE_LON}`);
-    const pointData = await pointResp.json();
-    const { gridX, gridY, gridId } = pointData.properties;
-
-    // Get hourly forecast
-    const forecastResp = await fetch(pointData.properties.forecastHourly);
-    const forecastData = await forecastResp.json();
-
-    // Get marine/coastal zone forecast
-    const gridResp = await fetch(`https://api.weather.gov/gridpoints/${gridId}/${gridX},${gridY}`);
-    const gridData = await gridResp.json();
-
-    // Marine zone codes for SoCal coastal/inshore/offshore waters.
-    // Small Craft Advisories and marine warnings are issued against PZZ zones
-    // by the NWS LOX marine desk. We query BOTH by office AND directly by
-    // zone to ensure nothing slips through.
-    //
-    //   CAZ041–CAZ047  LA County beaches & coast
-    //   CAZ546–CAZ553  split LA County coastal zones
-    //   CAZ048–CAZ050  Orange County coast
-    //   CAZ554–CAZ556  split Orange County coastal zones
-    //   CAZ018/019/518/519  Ventura County coast
-    //   PZZ150  Pt Conception to Santa Monica Bay — inshore (to 60nm)
-    //   PZZ155  Santa Monica Bay to San Clemente — inshore
-    //   PZZ160  San Clemente Island waters
-    //   PZZ165  Santa Barbara Island waters
-    //   PZZ170  San Nicolas Island waters
-    //   PZZ173  San Miguel/Santa Cruz Island waters
-    //   PZZ775  Pt Conception to Santa Monica Bay — outer (beyond 60nm)
-    //   PZZ776  Santa Monica Bay to San Clemente — outer
-    //   PZZ780  San Clemente to Ensenada — outer
-    const COASTAL_UGC = new Set([
-      'CAZ041','CAZ042','CAZ043','CAZ044','CAZ045','CAZ046','CAZ047',
-      'CAZ546','CAZ547','CAZ548','CAZ549','CAZ550','CAZ551','CAZ552','CAZ553',
-      'CAZ048','CAZ049','CAZ050',
-      'CAZ554','CAZ555','CAZ556',
-      'CAZ018','CAZ019','CAZ518','CAZ519',
-      'PZZ150','PZZ155','PZZ160','PZZ165','PZZ170','PZZ173',
-      'PZZ775','PZZ776','PZZ780',
-    ]);
-
-    // Fetch alerts two ways and merge: by office (land+marine from LOX) and
-    // directly by marine zone (catches SCAs that may not surface via office filter)
-    const MARINE_ZONES = 'PZZ150,PZZ155,PZZ160,PZZ165,PZZ170,PZZ173,PZZ775,PZZ776,PZZ780';
-    const [alertsByOffice, alertsByZone] = await Promise.all([
+    // Query by office AND by zone in parallel — whichever catches it first wins
+    const [byOffice, byZone] = await Promise.all([
       fetch('https://api.weather.gov/alerts/active?office=LOX',
         { headers: { 'User-Agent': 'LACFD-Marine-Report (pono.barnes@gmail.com)' } })
         .then(r => r.ok ? r.json() : { features: [] }).catch(() => ({ features: [] })),
@@ -2509,73 +2495,61 @@ async function fetchNWSForecast() {
         .then(r => r.ok ? r.json() : { features: [] }).catch(() => ({ features: [] })),
     ]);
 
-    // Merge, dedup by alert ID
+    // Merge, deduplicate by ID
     const seen = new Set();
-    const allLOXAlerts = [...(alertsByOffice.features || []), ...(alertsByZone.features || [])]
+    const all = [...(byOffice.features || []), ...(byZone.features || [])]
       .filter(f => { const id = f.properties?.id; if (seen.has(id)) return false; seen.add(id); return true; });
 
-    // Pre-filter: only keep alerts that touch at least one coastal/marine zone
-    const allZoneAlerts = allLOXAlerts.filter(f => {
+    // Keep alerts that touch any PZZ marine zone OR a known coastal land zone
+    const zoneFiltered = all.filter(f => {
       const zones = f.properties?.geocode?.UGC || [];
-      // Marine zone alerts (PZZ*) from the zone query always pass through
       if (zones.some(z => z.startsWith('PZZ'))) return true;
       return zones.some(z => COASTAL_UGC.has(z));
     });
 
-    // Event type allowlist — only alert types relevant to ocean lifeguards
-    // Explicitly excludes: winter weather, freeze, frost, heat (inland),
-    // tornado, thunderstorm, flood (river/inland), dust, fire weather
-    const ALLOWED_EVENTS = [
-      'high surf',
-      'surf',
-      'rip current',
-      'beach hazards',
-      'coastal flood',
-      'marine weather statement',
-      'special marine warning',
-      'marine wind warning',
-      'small craft advisory',
-      'gale warning',
-      'storm warning',
-      'hurricane force wind warning',
-      'dense fog advisory',
-      'coastal hazard message',
-      'wind advisory',        // only passes if in a coastal zone (already filtered above)
-      'wind warning',         // only passes if in a coastal zone
-      'hazardous seas',
-      'tsunami warning',
-      'tsunami watch',
-      'tsunami advisory',
-      'tsunami statement',
-      'tropical storm warning',
-      'tropical storm watch',
-      'hurricane warning',
-      'hurricane watch',
-      'ashfall advisory',     // volcanic ash can affect marine ops
-      'brisk wind advisory',
-      'lake wind advisory',
-    ];
-
-    const marineAlerts = allZoneAlerts.filter(f => {
+    // Event type filter — only marine/coastal relevant events
+    const marineAlerts = zoneFiltered.filter(f => {
       const ev = (f.properties.event || '').toLowerCase();
-      return ALLOWED_EVENTS.some(allowed => ev.includes(allowed));
+      return ALLOWED_EVENTS.some(a => ev.includes(a));
     });
 
-    // Sort by severity — warnings first, then watches, then advisories/statements
-    const severityOrder = (ev) => {
-      const e = ev.toLowerCase();
-      if (e.includes('warning')) return 0;
-      if (e.includes('watch')) return 1;
-      if (e.includes('advisory')) return 2;
-      return 3;
-    };
-    marineAlerts.sort((a, b) =>
-      severityOrder(a.properties.event) - severityOrder(b.properties.event)
-    );
+    // Sort: warnings first, watches second, advisories/statements last
+    marineAlerts.sort((a, b) => {
+      const rank = e => {
+        const s = e.toLowerCase();
+        return s.includes('warning') ? 0 : s.includes('watch') ? 1 : s.includes('advisory') ? 2 : 3;
+      };
+      return rank(a.properties.event) - rank(b.properties.event);
+    });
 
-    return { forecastData, gridData, marineAlerts, gridId, gridX, gridY };
+    return marineAlerts;
   } catch(e) {
-    console.error("NWS fetch error:", e);
+    console.error('NWS alerts fetch error:', e);
+    return [];
+  }
+}
+
+async function fetchNWSForecast() {
+  try {
+    // Get grid point
+    const pointResp = await fetch(`https://api.weather.gov/points/${MARINE_LAT},${MARINE_LON}`,
+      { headers: { 'User-Agent': 'LACFD-Marine-Report (pono.barnes@gmail.com)' } });
+    const pointData = await pointResp.json();
+    const { gridX, gridY, gridId } = pointData.properties;
+
+    // Get hourly forecast and grid data in parallel
+    const [forecastData, gridData] = await Promise.all([
+      fetch(pointData.properties.forecastHourly,
+        { headers: { 'User-Agent': 'LACFD-Marine-Report (pono.barnes@gmail.com)' } })
+        .then(r => r.json()),
+      fetch(`https://api.weather.gov/gridpoints/${gridId}/${gridX},${gridY}`,
+        { headers: { 'User-Agent': 'LACFD-Marine-Report (pono.barnes@gmail.com)' } })
+        .then(r => r.json()),
+    ]);
+
+    return { forecastData, gridData, gridId, gridX, gridY };
+  } catch(e) {
+    console.error('NWS forecast fetch error:', e);
     return null;
   }
 }
@@ -3366,7 +3340,7 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
     ${makeSection('sec-05','05','Tidal Predictions &amp; Solar Data',
       `<div class="two-col">
         <div>
-          <div class="section-header"><div class="section-tag">05A</div><div class="section-title">Tidal Predictions — LA Harbor</div><div class="section-line"></div></div>
+          <div class="section-header"><div class="section-tag">05A</div><div class="section-title">Tidal Predictions — Santa Monica</div><div class="section-line"></div></div>
           <div class="panel">${tidesHTML}<div class="source-note">NOAA TIDES &amp; CURRENTS · DATUM: MLLW</div></div>
         </div>
         <div>
@@ -4435,14 +4409,17 @@ async function initReport() {
   </div>`;
 
   try {
-    const [nws, marine, atmos, tides, waterTemp, sstFallback] = await Promise.all([
+    const [nws, marineAlerts, marine, atmos, tides, waterTemp, sstFallback] = await Promise.all([
       fetchNWSForecast(),
+      fetchNWSAlerts(),        // independent — never blocked by forecast fetch
       fetchOpenMeteoMarine(),
       fetchOpenMeteoAtmos(),
       fetchNOAATides(),
       fetchNOAAWaterTemp(),
       fetchOpenMeteoSST()
     ]);
+    // Attach alerts to nws object so buildReport signature stays the same
+    const nwsWithAlerts = nws ? { ...nws, marineAlerts } : { marineAlerts };
 
     if (!marine || !atmos) {
       document.getElementById('main-content').innerHTML = `
@@ -4455,7 +4432,7 @@ async function initReport() {
       return;
     }
 
-    buildReport(nws, marine, atmos, tides, waterTemp, sstFallback);
+    buildReport(nwsWithAlerts, marine, atmos, tides, waterTemp, sstFallback);
     // Initialize zone selector chips
     initZoneSelector();
     // If a zone was previously active, re-select it
