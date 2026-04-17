@@ -4031,8 +4031,7 @@ function buildUnifiedBriefing(nws, marine, atmos, tides, waterTempStr, swellRisk
           <div class="ub-conditions-grid">
             <div class="ub-cell">
               <div class="ub-cell-label">Combined Seas</div>
-              <div class="ub-cell-value" style="color:${riskColor(swellRisk.level)}">${waveHt ? waveHt.toFixed(1) : '--'}</div>
-              <div class="ub-cell-unit">FEET OFFSHORE · ${swellRisk.level}</div>
+              <div class="ub-cell-value" style="color:${riskColor(swellRisk.level)}">${waveHt ? waveHt.toFixed(1) + "'" : '--'}</div>
               <div class="ub-cell-badge" style="background:${riskBg(swellRisk.level)};color:${riskColor(swellRisk.level)}">${swellRisk.level}</div>
             </div>
             <div class="ub-cell" id="ub-nearshore-surf-cell">
@@ -4042,13 +4041,12 @@ function buildUnifiedBriefing(nws, marine, atmos, tides, waterTempStr, swellRisk
             </div>
             <div class="ub-cell">
               <div class="ub-cell-label">Primary Swell</div>
-              <div class="ub-cell-value">${swellHt ? swellHt.toFixed(1) : '--'}</div>
-              <div class="ub-cell-unit">FT · ${swellPer ? Math.round(swellPer) : '--'}s · ${degToCardinal(swellDir)}</div>
+              <div class="ub-cell-value">${swellHt ? swellHt.toFixed(1) + "'" : '--'}</div>
+              <div class="ub-cell-unit">${swellPer ? Math.round(swellPer) : '--'}s · ${degToCardinal(swellDir)}</div>
             </div>
             <div class="ub-cell">
               <div class="ub-cell-label">Wind Waves</div>
-              <div class="ub-cell-value">${marine.hourly.wind_wave_height ? marine.hourly.wind_wave_height[getCurrentHourIndex(marine.hourly.time)]?.toFixed(1) : '--'}</div>
-              <div class="ub-cell-unit">FT LOCAL CHOP</div>
+              <div class="ub-cell-value">${marine.hourly.wind_wave_height ? marine.hourly.wind_wave_height[getCurrentHourIndex(marine.hourly.time)]?.toFixed(1) + "'" : '--'}</div>
             </div>
             <div class="ub-cell">
               <div class="ub-cell-label">Rip Current Risk</div>
@@ -4057,8 +4055,8 @@ function buildUnifiedBriefing(nws, marine, atmos, tides, waterTempStr, swellRisk
             </div>
             <div class="ub-cell">
               <div class="ub-cell-label">Surface Wind</div>
-              <div class="ub-cell-value">${Math.round(windSpd)}</div>
-              <div class="ub-cell-unit">MPH ${degToCardinal(windDir)} / G${Math.round(windGst)}</div>
+              <div class="ub-cell-value">${Math.round(windSpd)} MPH</div>
+              <div class="ub-cell-unit">${degToCardinal(windDir)} / G${Math.round(windGst)}</div>
               <div class="ub-cell-badge" style="background:${riskBg(windType.label==='OFFSHORE'?'LOW':windType.label==='ONSHORE'?'HIGH':'MODERATE')};color:${windType.color}">${windType.label}</div>
             </div>
             <div class="ub-cell">
@@ -4073,8 +4071,8 @@ function buildUnifiedBriefing(nws, marine, atmos, tides, waterTempStr, swellRisk
             </div>
             <div class="ub-cell">
               <div class="ub-cell-label">Visibility</div>
-              <div class="ub-cell-value">${visMi}</div>
-              <div class="ub-cell-unit">MILES · ${pressure} hPa</div>
+              <div class="ub-cell-value">${visMi} MI</div>
+              <div class="ub-cell-unit">${pressure} hPa</div>
             </div>
             <div class="ub-cell">
               <div class="ub-cell-label">Tide Status</div>
