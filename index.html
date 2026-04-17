@@ -2869,12 +2869,9 @@ async function fetchNWSSurfForecast() {
 }
 
 async function fetchLAWaterQuality() {
-  // LA County beach water quality — pulls from CA SWRCB beach notification API
+  // Calls our Netlify function which scrapes LA County Public Health beach advisory page
   try {
-    const resp = await fetch(
-      'https://api.waterboards.ca.gov/beach_watch/beach_status?county=Los+Angeles&format=json',
-      { headers: { 'User-Agent': 'LACFD-Marine-Report' } }
-    );
+    const resp = await fetch('/.netlify/functions/beachwater');
     if (!resp.ok) return null;
     return await resp.json();
   } catch(e) {
@@ -4446,49 +4443,69 @@ async function loadSurfZoneForecast() {
 // ── Water Quality loader ───────────────────────────────────────────────────
 async function loadWaterQuality() {
   const grid = document.getElementById('wq-grid');
-  const note = document.querySelector('#wq-content .tide-chart-labels');
+  const noteEl = document.querySelector('#wq-content .tide-chart-labels');
   if (!grid) return;
 
   const data = await fetchLAWaterQuality();
 
-  // Curated LA County beach list with direct BeachWatch links
-  const LA_BEACHES = [
-    { name: 'Zuma Beach', id: 'zuma' },
-    { name: 'Malibu Lagoon', id: 'malibu-lagoon' },
-    { name: 'Santa Monica Pier', id: 'santa-monica-pier' },
-    { name: 'Venice Beach', id: 'venice' },
-    { name: 'Manhattan Beach', id: 'manhattan' },
-    { name: 'Hermosa Beach', id: 'hermosa' },
-    { name: 'Redondo Beach', id: 'redondo' },
-    { name: 'Cabrillo Beach', id: 'cabrillo' },
+  const LA_BEACHES_FALLBACK = [
+    'Zuma Beach','Santa Monica','Venice Beach',
+    'Manhattan Beach','Hermosa Beach','Redondo Beach',
+    'Cabrillo Beach','Long Beach',
   ];
 
-  if (data && Array.isArray(data) && data.length) {
-    if (note) note.style.display = 'none';
-    grid.innerHTML = data.slice(0, 16).map(b => {
-      const status = (b.status || b.advisory_status || '').toUpperCase();
-      const isOpen = status.includes('OPEN') || status.includes('SAFE') || status === 'A';
-      const isClosed = status.includes('CLOSE') || status.includes('PROHIBIT') || status === 'C';
-      const cls = isClosed ? 'wq-closed' : (!isOpen ? 'wq-warn' : 'wq-safe');
-      const label = isClosed ? '⛔ CLOSED' : (!isOpen ? '⚠ ADVISORY' : '✓ SAFE');
-      const beach = b.beach_name || b.name || 'Unknown';
-      const date = b.sample_date || b.last_sample || '';
+  // ── Rain / blanket advisory banner ──────────────────────────────────
+  const wqContent = document.getElementById('wq-content');
+  if (data && data.rainAdvisory && wqContent) {
+    const existing = document.getElementById('wq-rain-banner');
+    if (!existing) {
+      const banner = document.createElement('div');
+      banner.id = 'wq-rain-banner';
+      banner.style.cssText = `
+        background:rgba(237,26,59,0.12);border-left:3px solid var(--brand-red);
+        border-radius:4px;padding:10px 14px;margin-bottom:12px;
+        font-family:var(--mono);font-size:10px;color:#ff8899;
+        line-height:1.5;letter-spacing:0.3px;
+      `;
+      banner.innerHTML = `<div style="font-family:var(--font-title);font-size:11px;font-weight:800;
+        color:var(--brand-red);letter-spacing:1px;margin-bottom:4px">⚠ RAIN ADVISORY IN EFFECT</div>
+        ${data.rainAdvisory}`;
+      wqContent.insertBefore(banner, wqContent.firstChild);
+    }
+  }
+
+  if (data && data.beaches && data.beaches.length > 0) {
+    if (noteEl) noteEl.style.display = 'none';
+    const lastUpd = data.lastUpdated ? `<div style="font-family:var(--mono);font-size:9px;color:rgba(255,255,255,0.3);margin-bottom:10px">Last updated: ${data.lastUpdated}</div>` : '';
+    grid.innerHTML = lastUpd + data.beaches.map(b => {
+      const cls = b.status === 'closed' ? 'wq-closed' : b.status === 'advisory' ? 'wq-warn' : b.status === 'safe' ? 'wq-safe' : '';
+      const label = b.status === 'closed' ? '⛔ CLOSED' : b.status === 'advisory' ? '⚠ ADVISORY' : b.status === 'safe' ? '✓ SAFE TO SWIM' : '— UNKNOWN';
       return `<div class="wq-card ${cls}">
-        <div class="wq-beach">${beach}</div>
+        <div class="wq-beach">${b.name}</div>
         <div class="wq-status">${label}</div>
-        ${date ? `<div class="wq-date">Sampled: ${date}</div>` : ''}
+        ${b.grade ? `<div class="wq-date">Grade: ${b.grade}</div>` : ''}
       </div>`;
     }).join('');
   } else {
-    // API unavailable — show manual links to LA County health page per zone
-    if (note) note.textContent = 'Live water quality API unavailable · Links to official sources below';
-    grid.innerHTML = LA_BEACHES.map(b => `
-      <div class="wq-card" style="border-left-color:rgba(255,255,255,0.15)">
-        <div class="wq-beach">${b.name}</div>
-        <div class="wq-status" style="color:rgba(255,255,255,0.4)">— Status unavailable</div>
-        <div class="wq-date"><a href="https://beachwatch.waterboards.ca.gov/" target="_blank" style="color:var(--brand-gold);font-size:9px">View at BeachWatch ↗</a></div>
+    // Proxy returned no beach rows (page structure may have changed or rain advisory blankets all)
+    if (noteEl) {
+      noteEl.style.cssText = 'display:block;color:rgba(255,255,255,0.4);font-size:10px;margin-bottom:10px';
+      noteEl.textContent = data
+        ? (data.rainAdvisory ? 'Rain advisory in effect — individual beach status may not be listed.' : 'Beach-level data could not be parsed from LA County page.')
+        : 'Water quality service unavailable.';
+    }
+    grid.innerHTML = LA_BEACHES_FALLBACK.map(name => `
+      <div class="wq-card" style="border-left-color:rgba(255,255,255,0.12)">
+        <div class="wq-beach">${name}</div>
+        <div class="wq-status" style="color:rgba(255,255,255,0.35)">— Check LA County Health</div>
       </div>`).join('');
   }
+
+  // Always show source link
+  const srcBar = document.querySelector('#wq-content .source-note:first-of-type');
+  if (srcBar) srcBar.innerHTML =
+    `LA COUNTY DEPT OF PUBLIC HEALTH · <a href="${'https://publichealth.lacounty.gov/phcommon/public/eh/water_quality/beach_grades.cfm'}"
+     target="_blank" style="color:var(--brand-gold)">VIEW FULL REPORT ↗</a>`;
 }
 
 async function initReport() {
