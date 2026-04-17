@@ -4037,8 +4037,7 @@ function buildUnifiedBriefing(nws, marine, atmos, tides, waterTempStr, swellRisk
             </div>
             <div class="ub-cell" id="ub-nearshore-surf-cell">
               <div class="ub-cell-label">Nearshore Surf</div>
-              <div class="ub-cell-value" id="ub-surf-value" style="font-size:16px;color:rgba(255,255,255,0.3)">—</div>
-              <div class="ub-cell-unit" id="ub-surf-unit">FT BEACH · loading…</div>
+              <div class="ub-cell-value" id="ub-surf-value" style="color:rgba(255,255,255,0.3)">—</div>
               <div class="ub-cell-badge" id="ub-surf-badge" style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.3)">SURFLINE</div>
             </div>
             <div class="ub-cell">
@@ -4053,33 +4052,33 @@ function buildUnifiedBriefing(nws, marine, atmos, tides, waterTempStr, swellRisk
             </div>
             <div class="ub-cell">
               <div class="ub-cell-label">Rip Current Risk</div>
-              <div class="ub-cell-value" style="font-size:14px;color:${riskColor(ripRisk.level)}">${ripRisk.level}</div>
+              <div class="ub-cell-value" style="color:${riskColor(ripRisk.level)}">${ripRisk.level}</div>
               <div class="ub-cell-unit">PERIOD: ${wavePer ? Math.round(wavePer) : '--'}s</div>
             </div>
             <div class="ub-cell">
               <div class="ub-cell-label">Surface Wind</div>
-              <div class="ub-cell-value" style="font-size:16px">${Math.round(windSpd)}</div>
+              <div class="ub-cell-value">${Math.round(windSpd)}</div>
               <div class="ub-cell-unit">MPH ${degToCardinal(windDir)} / G${Math.round(windGst)}</div>
               <div class="ub-cell-badge" style="background:${riskBg(windType.label==='OFFSHORE'?'LOW':windType.label==='ONSHORE'?'HIGH':'MODERATE')};color:${windType.color}">${windType.label}</div>
             </div>
             <div class="ub-cell">
               <div class="ub-cell-label">Water Temp</div>
-              <div class="ub-cell-value" style="font-size:18px">${waterTempStr}</div>
+              <div class="ub-cell-value">${waterTempStr}</div>
               <div class="ub-cell-unit">NOAA GAUGE</div>
             </div>
             <div class="ub-cell">
               <div class="ub-cell-label">Air Temp</div>
-              <div class="ub-cell-value" style="font-size:18px">${temp}°F</div>
+              <div class="ub-cell-value">${temp}°F</div>
               <div class="ub-cell-unit">UV INDEX: ${uvi} · ${uvRisk.level}</div>
             </div>
             <div class="ub-cell">
               <div class="ub-cell-label">Visibility</div>
-              <div class="ub-cell-value" style="font-size:18px">${visMi}</div>
+              <div class="ub-cell-value">${visMi}</div>
               <div class="ub-cell-unit">MILES · ${pressure} hPa</div>
             </div>
             <div class="ub-cell">
               <div class="ub-cell-label">Tide Status</div>
-              <div class="ub-cell-value" style="font-size:14px">${tideStatus}</div>
+              <div class="ub-cell-value">${tideStatus}</div>
               <div class="ub-cell-unit">${nextTideStr}</div>
             </div>
           </div>
@@ -4140,9 +4139,8 @@ function updateUBSurfline(parsedSpots) {
 
   // ── Populate Nearshore Surf cell ─────────────────────────────────────────
   const surfVal  = document.getElementById('ub-surf-value');
-  const surfUnit = document.getElementById('ub-surf-unit');
   const surfBadge= document.getElementById('ub-surf-badge');
-  if (surfVal && surfUnit && surfBadge) {
+  if (surfVal && surfBadge) {
     const valid = (parsedSpots || []).filter(Boolean);
     if (valid.length) {
       const mins = valid.map(p => p.waveMin).filter(v => v != null);
@@ -4150,19 +4148,16 @@ function updateUBSurfline(parsedSpots) {
       const lo = mins.length ? Math.min(...mins) : null;
       const hi = maxs.length ? Math.max(...maxs) : null;
       if (lo != null && hi != null) {
-        surfVal.textContent  = `${lo}–${hi}`;
+        surfVal.textContent  = `${lo}\u2013${hi}'`;
         surfVal.style.color  = 'var(--brand-gold)';
-        surfUnit.textContent = 'FT BEACH · SURFLINE';
         surfBadge.textContent= 'SURFLINE';
         surfBadge.style.background = 'rgba(212,186,107,0.18)';
         surfBadge.style.color      = 'var(--brand-gold)';
       } else {
-        surfVal.textContent = '—';
-        surfUnit.textContent = 'FT BEACH · NO DATA';
+        surfVal.textContent = '\u2014';
       }
     } else {
-      surfVal.textContent = '—';
-      surfUnit.textContent = 'SURFLINE BLOCKED';
+      surfVal.textContent = '\u2014';
     }
   }
 
