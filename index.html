@@ -1956,38 +1956,6 @@
   .tide-hilo-chip.tide-h { border-color: rgba(0,180,255,0.4); color: #60d4ff; }
   .tide-hilo-chip.tide-l { border-color: rgba(212,186,107,0.4); color: var(--brand-gold); }
 
-  /* ── NWS Surf Zone Forecast ── */
-  .srf-text {
-    font-family: var(--mono); font-size: 11px; line-height: 1.7;
-    color: rgba(255,255,255,0.8); white-space: pre-wrap;
-    max-height: 340px; overflow-y: auto;
-    padding: 4px 0;
-  }
-  .srf-issued {
-    font-family: var(--mono); font-size: 9px;
-    color: rgba(212,186,107,0.6); margin-bottom: 8px; letter-spacing: 0.5px;
-  }
-
-  /* ── Water Quality ── */
-  .wq-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 8px; margin-top: 4px;
-  }
-  .wq-card {
-    background: rgba(255,255,255,0.04);
-    border-radius: 6px; padding: 10px 12px;
-    border-left: 3px solid rgba(255,255,255,0.1);
-  }
-  .wq-card.wq-safe   { border-left-color: #00cc88; }
-  .wq-card.wq-warn   { border-left-color: #f0b800; }
-  .wq-card.wq-closed { border-left-color: #cc2200; }
-  .wq-beach { font-family: var(--font-title); font-size: 12px; font-weight: 800; color: #fff; }
-  .wq-status { font-family: var(--mono); font-size: 10px; margin-top: 3px; }
-  .wq-date { font-family: var(--mono); font-size: 9px; color: rgba(255,255,255,0.35); margin-top: 2px; }
-  .wq-safe .wq-status   { color: #00cc88; }
-  .wq-warn .wq-status   { color: #f0b800; }
-  .wq-closed .wq-status { color: #ff4422; }
 </style>
 </head>
 <body>
@@ -2849,25 +2817,6 @@ async function fetchNOAATidesHourly() {
   } catch(e) { console.error('Hourly tides error:', e); return null; }
 }
 
-async function fetchNWSSurfForecast() {
-  try {
-    const listResp = await fetch(
-      'https://api.weather.gov/products/types/SRF/locations/LOX',
-      { headers: { 'User-Agent': 'LACFD-Marine-Report (pono.barnes@gmail.com)' } }
-    );
-    if (!listResp.ok) return null;
-    const list = await listResp.json();
-    const latest = list['@graph']?.[0];
-    if (!latest) return null;
-    const prodResp = await fetch(latest['@id'],
-      { headers: { 'User-Agent': 'LACFD-Marine-Report (pono.barnes@gmail.com)' } }
-    );
-    if (!prodResp.ok) return null;
-    const prod = await prodResp.json();
-    return { text: prod.productText, issued: prod.issuanceTime };
-  } catch(e) { console.error('NWS SRF error:', e); return null; }
-}
-
 async function fetchLAWaterQuality() {
   // Calls our Netlify function which scrapes LA County Public Health beach advisory page
   try {
@@ -3424,17 +3373,9 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
     ${makeSection('sec-10','10','WaveCast SoCal Forecast',
       waveCastNote, 'WAVECAST.COM · SUN/TUE/THU')}
 
-    ${makeSection('sec-11','11','NWS Surf Zone Forecast — Southern California',
-      `<div class="panel" id="srf-content">
-        <div class="srf-issued" id="srf-issued">Loading NWS surf forecast…</div>
-        <div class="srf-text" id="srf-text"></div>
-        <div class="source-note">NWS LOS ANGELES OFFICE · PRODUCT: SRF</div>
-      </div>`, 'NWS LOX · SRF', true)}
-
-    ${makeSection('sec-12','12','Beach Water Quality — LA County',
+    ${makeSection('sec-12','11','Beach Water Quality — LA County',
       `<div class="panel" id="wq-content">
-        <div class="tide-chart-labels" style="margin-bottom:8px;font-size:9px;color:rgba(255,255,255,0.35)">Loading water quality data…</div>
-        <div class="wq-grid" id="wq-grid"></div>
+        <div class="tide-chart-labels" id="wq-status-note" style="margin-bottom:8px;font-size:9px;color:rgba(255,255,255,0.35)">Loading water quality data…</div>
         <div class="source-note" style="margin-top:10px">CA STATE WATER RESOURCES CONTROL BOARD · BEACH WATCH PROGRAM</div>
         <div class="source-note"><a href="https://beachwatch.waterboards.ca.gov/" target="_blank" style="color:var(--brand-gold)">View full data at BeachWatch ↗</a></div>
       </div>`, 'CA SWRCB · BEACHWATCH', true)}
@@ -4413,49 +4354,14 @@ async function loadTideChart() {
   }
 }
 
-// ── NWS Surf Zone Forecast loader ─────────────────────────────────────────
-async function loadSurfZoneForecast() {
-  const textEl = document.getElementById('srf-text');
-  const issuedEl = document.getElementById('srf-issued');
-  if (!textEl) return;
-
-  const srf = await fetchNWSSurfForecast();
-  if (!srf) {
-    textEl.textContent = 'NWS surf zone forecast unavailable. View at weather.gov/lox';
-    if (issuedEl) issuedEl.textContent = '';
-    return;
-  }
-
-  // Clean up the product text — trim header boilerplate, keep forecast body
-  let text = srf.text || '';
-  // Remove the preamble lines up to the first blank line after the header
-  const lines = text.split('\n');
-  const bodyStart = lines.findIndex((l, i) => i > 3 && l.trim() === '');
-  const body = bodyStart > 0 ? lines.slice(bodyStart + 1).join('\n').trim() : text.trim();
-
-  textEl.textContent = body;
-  if (issuedEl && srf.issued) {
-    const d = new Date(srf.issued);
-    issuedEl.textContent = `ISSUED: ${d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})} · ${d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/Los_Angeles'})} PDT`;
-  }
-}
-
 // ── Water Quality loader ───────────────────────────────────────────────────
 async function loadWaterQuality() {
-  const grid = document.getElementById('wq-grid');
-  const noteEl = document.querySelector('#wq-content .tide-chart-labels');
-  if (!grid) return;
+  const noteEl = document.getElementById('wq-status-note');
+  const wqContent = document.getElementById('wq-content');
 
   const data = await fetchLAWaterQuality();
 
-  const LA_BEACHES_FALLBACK = [
-    'Zuma Beach','Santa Monica','Venice Beach',
-    'Manhattan Beach','Hermosa Beach','Redondo Beach',
-    'Cabrillo Beach','Long Beach',
-  ];
-
   // ── Rain / blanket advisory banner ──────────────────────────────────
-  const wqContent = document.getElementById('wq-content');
   if (data && data.rainAdvisory && wqContent) {
     const existing = document.getElementById('wq-rain-banner');
     if (!existing) {
@@ -4474,31 +4380,17 @@ async function loadWaterQuality() {
     }
   }
 
-  if (data && data.beaches && data.beaches.length > 0) {
-    if (noteEl) noteEl.style.display = 'none';
-    const lastUpd = data.lastUpdated ? `<div style="font-family:var(--mono);font-size:9px;color:rgba(255,255,255,0.3);margin-bottom:10px">Last updated: ${data.lastUpdated}</div>` : '';
-    grid.innerHTML = lastUpd + data.beaches.map(b => {
-      const cls = b.status === 'closed' ? 'wq-closed' : b.status === 'advisory' ? 'wq-warn' : b.status === 'safe' ? 'wq-safe' : '';
-      const label = b.status === 'closed' ? '⛔ CLOSED' : b.status === 'advisory' ? '⚠ ADVISORY' : b.status === 'safe' ? '✓ SAFE TO SWIM' : '— UNKNOWN';
-      return `<div class="wq-card ${cls}">
-        <div class="wq-beach">${b.name}</div>
-        <div class="wq-status">${label}</div>
-        ${b.grade ? `<div class="wq-date">Grade: ${b.grade}</div>` : ''}
-      </div>`;
-    }).join('');
-  } else {
-    // Proxy returned no beach rows (page structure may have changed or rain advisory blankets all)
-    if (noteEl) {
-      noteEl.style.cssText = 'display:block;color:rgba(255,255,255,0.4);font-size:10px;margin-bottom:10px';
-      noteEl.textContent = data
-        ? (data.rainAdvisory ? 'Rain advisory in effect — individual beach status may not be listed.' : 'Beach-level data could not be parsed from LA County page.')
-        : 'Water quality service unavailable.';
+  // Update status note
+  if (noteEl) {
+    if (data && data.lastUpdated) {
+      noteEl.textContent = `Last updated: ${data.lastUpdated}`;
+    } else if (data && data.rainAdvisory) {
+      noteEl.textContent = 'Rain advisory in effect — check LA County Health for individual beach status.';
+    } else if (!data) {
+      noteEl.textContent = 'Water quality service unavailable.';
+    } else {
+      noteEl.style.display = 'none';
     }
-    grid.innerHTML = LA_BEACHES_FALLBACK.map(name => `
-      <div class="wq-card" style="border-left-color:rgba(255,255,255,0.12)">
-        <div class="wq-beach">${name}</div>
-        <div class="wq-status" style="color:rgba(255,255,255,0.35)">— Check LA County Health</div>
-      </div>`).join('');
   }
 
   // Always show source link
@@ -4561,8 +4453,6 @@ async function initReport() {
     loadWaveCastSection();
     // Load tide chart async (hourly data separate from hilo fetch)
     loadTideChart();
-    // Load NWS Surf Zone Forecast async
-    loadSurfZoneForecast();
     // Load beach water quality async
     loadWaterQuality();
   } catch(err) {
