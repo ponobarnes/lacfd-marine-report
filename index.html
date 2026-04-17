@@ -1936,6 +1936,58 @@
     .ub-masthead { flex-direction: column; align-items: flex-start; }
     .ub-masthead-hide-mobile { display: none !important; }
   }
+
+  /* ── Tide SVG chart ── */
+  .tide-chart-wrap { width: 100%; margin: 12px 0 6px; }
+  .tide-chart-wrap svg { width: 100%; height: 120px; display: block; }
+  .tide-chart-labels {
+    display: flex; justify-content: space-between;
+    font-family: var(--mono); font-size: 8px; color: rgba(255,255,255,0.35);
+    padding: 0 2px; margin-top: 2px;
+  }
+  .tide-hilo-row {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;
+  }
+  .tide-hilo-chip {
+    font-family: var(--mono); font-size: 10px;
+    padding: 3px 8px; border-radius: 4px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  }
+  .tide-hilo-chip.tide-h { border-color: rgba(0,180,255,0.4); color: #60d4ff; }
+  .tide-hilo-chip.tide-l { border-color: rgba(212,186,107,0.4); color: var(--brand-gold); }
+
+  /* ── NWS Surf Zone Forecast ── */
+  .srf-text {
+    font-family: var(--mono); font-size: 11px; line-height: 1.7;
+    color: rgba(255,255,255,0.8); white-space: pre-wrap;
+    max-height: 340px; overflow-y: auto;
+    padding: 4px 0;
+  }
+  .srf-issued {
+    font-family: var(--mono); font-size: 9px;
+    color: rgba(212,186,107,0.6); margin-bottom: 8px; letter-spacing: 0.5px;
+  }
+
+  /* ── Water Quality ── */
+  .wq-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px; margin-top: 4px;
+  }
+  .wq-card {
+    background: rgba(255,255,255,0.04);
+    border-radius: 6px; padding: 10px 12px;
+    border-left: 3px solid rgba(255,255,255,0.1);
+  }
+  .wq-card.wq-safe   { border-left-color: #00cc88; }
+  .wq-card.wq-warn   { border-left-color: #f0b800; }
+  .wq-card.wq-closed { border-left-color: #cc2200; }
+  .wq-beach { font-family: var(--font-title); font-size: 12px; font-weight: 800; color: #fff; }
+  .wq-status { font-family: var(--mono); font-size: 10px; margin-top: 3px; }
+  .wq-date { font-family: var(--mono); font-size: 9px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+  .wq-safe .wq-status   { color: #00cc88; }
+  .wq-warn .wq-status   { color: #f0b800; }
+  .wq-closed .wq-status { color: #ff4422; }
 </style>
 </head>
 <body>
@@ -2768,7 +2820,7 @@ function generateNarrative(marine, atmos, tides, nws) {
 `Wave period of ${wavePer ? Math.round(wavePer) : '--'}s indicates ${wavePer > 12 ? 'longer-period ground swell which significantly increases rip current and shore break danger.' : 'shorter-period wind swell with moderate rip current potential.'}`,
 ``,
 `UV / HEAT EXPOSURE:`,
-`UV Index is ${uvi ? Math.round(uvi) : '--'} (${uvi ? getUVRiskLevel(uvi).level : 'N/A'}). All personnel on extended beach patrol should take appropriate sun protection measures.`,
+`UV Index is ${uvi ? Math.round(uvi) : '--'} (${uvi ? getUVRiskLevel(uvi).level : 'N/A'}). All lifeguard personnel should take appropriate sun protection measures.`,
 ``,
 `OPERATIONAL OUTLOOK (TODAY):`,
 `Maximum wave height expected: ${dayMaxWave ? dayMaxWave.toFixed(1) : '--'} ft. Maximum swell: ${dayMaxSwell ? dayMaxSwell.toFixed(1) : '--'} ft.`,
@@ -2783,6 +2835,54 @@ function generateNarrative(marine, atmos, tides, nws) {
 }
 
 // Build the report HTML
+
+async function fetchNOAATidesHourly() {
+  try {
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}`;
+    const url = `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?` +
+      `begin_date=${dateStr}&end_date=${dateStr}&station=${NOAA_STATION}` +
+      `&product=predictions&datum=MLLW&time_zone=lst_ldt&interval=h&units=english&application=lacfd_lifeguard&format=json`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    return data.predictions || null;
+  } catch(e) { console.error('Hourly tides error:', e); return null; }
+}
+
+async function fetchNWSSurfForecast() {
+  try {
+    const listResp = await fetch(
+      'https://api.weather.gov/products/types/SRF/locations/LOX',
+      { headers: { 'User-Agent': 'LACFD-Marine-Report (pono.barnes@gmail.com)' } }
+    );
+    if (!listResp.ok) return null;
+    const list = await listResp.json();
+    const latest = list['@graph']?.[0];
+    if (!latest) return null;
+    const prodResp = await fetch(latest['@id'],
+      { headers: { 'User-Agent': 'LACFD-Marine-Report (pono.barnes@gmail.com)' } }
+    );
+    if (!prodResp.ok) return null;
+    const prod = await prodResp.json();
+    return { text: prod.productText, issued: prod.issuanceTime };
+  } catch(e) { console.error('NWS SRF error:', e); return null; }
+}
+
+async function fetchLAWaterQuality() {
+  // LA County beach water quality — pulls from CA SWRCB beach notification API
+  try {
+    const resp = await fetch(
+      'https://api.waterboards.ca.gov/beach_watch/beach_status?county=Los+Angeles&format=json',
+      { headers: { 'User-Agent': 'LACFD-Marine-Report' } }
+    );
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch(e) {
+    console.error('Water quality fetch error:', e);
+    return null;
+  }
+}
+
 function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
   const now = new Date();
   const hi = getCurrentHourIndex(marine.hourly.time);
@@ -3040,22 +3140,23 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
   hourlyHTML += `</div>`;
 
   // Tides
+  // Tide table (hi/lo chips) — chart is loaded async
   let tidesHTML = `<div>`;
   if (tides && tides.predictions) {
-    tides.predictions.slice(0, 6).forEach(t => {
+    tidesHTML += `<div class="tide-hilo-row">`;
+    tides.predictions.slice(0, 8).forEach(t => {
       const isHigh = t.type === 'H';
       const ht = parseFloat(t.v).toFixed(1);
-      const pct = Math.min(100, Math.max(5, ((parseFloat(t.v) + 0.5) / 7) * 100));
-      tidesHTML += `<div class="tide-row">
-        <div class="tide-type ${isHigh ? 'tide-high' : 'tide-low'}">${isHigh ? 'HIGH' : 'LOW'}</div>
-        <div>
-          <div class="tide-time">${t.t.split(' ')[1]}</div>
-          <div class="tide-progress"><div class="tide-fill" style="width:${pct}%"></div></div>
-        </div>
-        <div></div>
-        <div class="tide-height">${ht}<span> ft MLLW</span></div>
+      const time = t.t.split(' ')[1];
+      tidesHTML += `<div class="tide-hilo-chip ${isHigh ? 'tide-h' : 'tide-l'}">
+        ${isHigh ? '▲ HIGH' : '▼ LOW'} &nbsp;${time} &nbsp;<strong>${ht} ft</strong>
       </div>`;
     });
+    tidesHTML += `</div>`;
+    tidesHTML += `<div class="tide-chart-wrap"><svg id="tide-chart-svg" viewBox="0 0 600 120" preserveAspectRatio="none">
+      <text x="300" y="65" text-anchor="middle" fill="rgba(255,255,255,0.2)" font-size="12" font-family="monospace">Loading tide chart…</text>
+    </svg>
+    <div class="tide-chart-labels" id="tide-chart-labels"></div></div>`;
   } else {
     tidesHTML += `<div class="error-note">Tide data unavailable — contact NOAA CO-OPS</div>`;
   }
@@ -3325,6 +3426,21 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
 
     ${makeSection('sec-10','10','WaveCast SoCal Forecast',
       waveCastNote, 'WAVECAST.COM · SUN/TUE/THU')}
+
+    ${makeSection('sec-11','11','NWS Surf Zone Forecast — Southern California',
+      `<div class="panel" id="srf-content">
+        <div class="srf-issued" id="srf-issued">Loading NWS surf forecast…</div>
+        <div class="srf-text" id="srf-text"></div>
+        <div class="source-note">NWS LOS ANGELES OFFICE · PRODUCT: SRF</div>
+      </div>`, 'NWS LOX · SRF', true)}
+
+    ${makeSection('sec-12','12','Beach Water Quality — LA County',
+      `<div class="panel" id="wq-content">
+        <div class="tide-chart-labels" style="margin-bottom:8px;font-size:9px;color:rgba(255,255,255,0.35)">Loading water quality data…</div>
+        <div class="wq-grid" id="wq-grid"></div>
+        <div class="source-note" style="margin-top:10px">CA STATE WATER RESOURCES CONTROL BOARD · BEACH WATCH PROGRAM</div>
+        <div class="source-note"><a href="https://beachwatch.waterboards.ca.gov/" target="_blank" style="color:var(--brand-gold)">View full data at BeachWatch ↗</a></div>
+      </div>`, 'CA SWRCB · BEACHWATCH', true)}
   `;
 
   document.getElementById('main-content').innerHTML = html;
@@ -4248,6 +4364,133 @@ function updateUBWaveCast(data) {
 }
 
 // Main init
+
+// ── Tide chart (SVG curve from hourly predictions) ────────────────────────
+async function loadTideChart() {
+  const svg = document.getElementById('tide-chart-svg');
+  const labelsEl = document.getElementById('tide-chart-labels');
+  if (!svg) return;
+
+  const hourly = await fetchNOAATidesHourly();
+  if (!hourly || !hourly.length) {
+    svg.innerHTML = `<text x="300" y="65" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="11" font-family="monospace">Tide chart unavailable</text>`;
+    return;
+  }
+
+  const vals = hourly.map(p => parseFloat(p.v));
+  const times = hourly.map(p => p.t.split(' ')[1]);
+  const min = Math.min(...vals) - 0.3;
+  const max = Math.max(...vals) + 0.3;
+  const range = max - min;
+  const W = 600, H = 120, PAD = 8;
+  const toX = i => PAD + (i / (vals.length - 1)) * (W - PAD * 2);
+  const toY = v => H - PAD - ((v - min) / range) * (H - PAD * 2);
+
+  // Build SVG path
+  let d = vals.map((v, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ');
+  // Fill area under curve
+  const fillD = d + ` L${toX(vals.length-1).toFixed(1)},${H} L${toX(0).toFixed(1)},${H} Z`;
+
+  // Mark current hour
+  const nowHour = new Date().getHours();
+  const nowX = toX(Math.min(nowHour, vals.length - 1));
+  const nowY = toY(vals[Math.min(nowHour, vals.length - 1)]);
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="tideGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="rgba(0,150,255,0.35)"/>
+        <stop offset="100%" stop-color="rgba(0,150,255,0.03)"/>
+      </linearGradient>
+    </defs>
+    <path d="${fillD}" fill="url(#tideGrad)" stroke="none"/>
+    <path d="${d}" fill="none" stroke="rgba(0,180,255,0.7)" stroke-width="2" stroke-linejoin="round"/>
+    <line x1="${nowX.toFixed(1)}" y1="${PAD}" x2="${nowX.toFixed(1)}" y2="${H-PAD}" stroke="rgba(212,186,107,0.6)" stroke-width="1.5" stroke-dasharray="3,3"/>
+    <circle cx="${nowX.toFixed(1)}" cy="${nowY.toFixed(1)}" r="4" fill="var(--brand-gold)" stroke="#fff" stroke-width="1.5"/>
+  `;
+
+  // Hour labels every 3 hours
+  if (labelsEl) {
+    const labelTimes = times.filter((_, i) => i % 3 === 0);
+    labelsEl.innerHTML = labelTimes.map(t => `<span>${t}</span>`).join('');
+  }
+}
+
+// ── NWS Surf Zone Forecast loader ─────────────────────────────────────────
+async function loadSurfZoneForecast() {
+  const textEl = document.getElementById('srf-text');
+  const issuedEl = document.getElementById('srf-issued');
+  if (!textEl) return;
+
+  const srf = await fetchNWSSurfForecast();
+  if (!srf) {
+    textEl.textContent = 'NWS surf zone forecast unavailable. View at weather.gov/lox';
+    if (issuedEl) issuedEl.textContent = '';
+    return;
+  }
+
+  // Clean up the product text — trim header boilerplate, keep forecast body
+  let text = srf.text || '';
+  // Remove the preamble lines up to the first blank line after the header
+  const lines = text.split('\n');
+  const bodyStart = lines.findIndex((l, i) => i > 3 && l.trim() === '');
+  const body = bodyStart > 0 ? lines.slice(bodyStart + 1).join('\n').trim() : text.trim();
+
+  textEl.textContent = body;
+  if (issuedEl && srf.issued) {
+    const d = new Date(srf.issued);
+    issuedEl.textContent = `ISSUED: ${d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})} · ${d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/Los_Angeles'})} PDT`;
+  }
+}
+
+// ── Water Quality loader ───────────────────────────────────────────────────
+async function loadWaterQuality() {
+  const grid = document.getElementById('wq-grid');
+  const note = document.querySelector('#wq-content .tide-chart-labels');
+  if (!grid) return;
+
+  const data = await fetchLAWaterQuality();
+
+  // Curated LA County beach list with direct BeachWatch links
+  const LA_BEACHES = [
+    { name: 'Zuma Beach', id: 'zuma' },
+    { name: 'Malibu Lagoon', id: 'malibu-lagoon' },
+    { name: 'Santa Monica Pier', id: 'santa-monica-pier' },
+    { name: 'Venice Beach', id: 'venice' },
+    { name: 'Manhattan Beach', id: 'manhattan' },
+    { name: 'Hermosa Beach', id: 'hermosa' },
+    { name: 'Redondo Beach', id: 'redondo' },
+    { name: 'Cabrillo Beach', id: 'cabrillo' },
+  ];
+
+  if (data && Array.isArray(data) && data.length) {
+    if (note) note.style.display = 'none';
+    grid.innerHTML = data.slice(0, 16).map(b => {
+      const status = (b.status || b.advisory_status || '').toUpperCase();
+      const isOpen = status.includes('OPEN') || status.includes('SAFE') || status === 'A';
+      const isClosed = status.includes('CLOSE') || status.includes('PROHIBIT') || status === 'C';
+      const cls = isClosed ? 'wq-closed' : (!isOpen ? 'wq-warn' : 'wq-safe');
+      const label = isClosed ? '⛔ CLOSED' : (!isOpen ? '⚠ ADVISORY' : '✓ SAFE');
+      const beach = b.beach_name || b.name || 'Unknown';
+      const date = b.sample_date || b.last_sample || '';
+      return `<div class="wq-card ${cls}">
+        <div class="wq-beach">${beach}</div>
+        <div class="wq-status">${label}</div>
+        ${date ? `<div class="wq-date">Sampled: ${date}</div>` : ''}
+      </div>`;
+    }).join('');
+  } else {
+    // API unavailable — show manual links to LA County health page per zone
+    if (note) note.textContent = 'Live water quality API unavailable · Links to official sources below';
+    grid.innerHTML = LA_BEACHES.map(b => `
+      <div class="wq-card" style="border-left-color:rgba(255,255,255,0.15)">
+        <div class="wq-beach">${b.name}</div>
+        <div class="wq-status" style="color:rgba(255,255,255,0.4)">— Status unavailable</div>
+        <div class="wq-date"><a href="https://beachwatch.waterboards.ca.gov/" target="_blank" style="color:var(--brand-gold);font-size:9px">View at BeachWatch ↗</a></div>
+      </div>`).join('');
+  }
+}
+
 async function initReport() {
   document.getElementById('main-content').innerHTML = `
     <div class="loading-state">
@@ -4295,10 +4538,16 @@ async function initReport() {
       activeZoneId = null; // reset so selectZone runs fresh
       selectZone(prevZone);
     }
-    // Load Surfline async after main report is rendered
+    // Load Surfline/NDBC async
     loadNDBCSection();
-    // Load WaveCast forecast async after main report is rendered
+    // Load WaveCast forecast async
     loadWaveCastSection();
+    // Load tide chart async (hourly data separate from hilo fetch)
+    loadTideChart();
+    // Load NWS Surf Zone Forecast async
+    loadSurfZoneForecast();
+    // Load beach water quality async
+    loadWaterQuality();
   } catch(err) {
     console.error("Report init error:", err);
     document.getElementById('main-content').innerHTML = `
