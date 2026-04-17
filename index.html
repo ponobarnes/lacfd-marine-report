@@ -2449,7 +2449,7 @@ const LA_BEACHES = [
 // Representative coordinates for LA County marine area
 const MARINE_LAT = 33.95;
 const MARINE_LON = -118.50;
-const NOAA_STATION = "9410660"; // Los Angeles tide gauge
+const NOAA_STATION = "9410840"; // Santa Monica tide gauge
 
 let reportData = {};
 
@@ -2468,40 +2468,57 @@ async function fetchNWSForecast() {
     const gridResp = await fetch(`https://api.weather.gov/gridpoints/${gridId}/${gridX},${gridY}`);
     const gridData = await gridResp.json();
 
-    // Fetch ALL active alerts from NWS LOX (Los Angeles/Oxnard) office only.
-    // Querying by office ensures we never get alerts from Seattle, Portland,
-    // or any other regional NWS office — only alerts issued by LOX.
-    const alertsResp = await fetch('https://api.weather.gov/alerts/active?office=LOX');
-    const alertsJson = alertsResp.ok ? await alertsResp.json() : { features: [] };
-    const allLOXAlerts = alertsJson.features || [];
-
-    // LOX covers all of Southern California including inland zones (mountains,
-    // desert valleys). Keep only coastal/marine UGC zones relevant to lifeguard ops:
-    //   CAZ041–CAZ043  LA County beaches & coast
-    //   CAZ044–CAZ047  additional LA County coastal zones
+    // Marine zone codes for SoCal coastal/inshore/offshore waters.
+    // Small Craft Advisories and marine warnings are issued against PZZ zones
+    // by the NWS LOX marine desk. We query BOTH by office AND directly by
+    // zone to ensure nothing slips through.
+    //
+    //   CAZ041–CAZ047  LA County beaches & coast
     //   CAZ546–CAZ553  split LA County coastal zones
     //   CAZ048–CAZ050  Orange County coast
     //   CAZ554–CAZ556  split Orange County coastal zones
-    //   CAZ518–CAZ519  Ventura County coast
-    //   PZZ150         Pt Conception to Santa Monica Bay (inshore)
-    //   PZZ155         San Pedro Channel (inshore)
-    //   PZZ160         San Clemente Island waters
-    //   PZZ170         Santa Barbara Island waters
-    //   PZZ775         Pt Conception to Santa Monica Bay (outer)
-    //   PZZ780         Santa Monica Bay to Ensenada (outer)
+    //   CAZ018/019/518/519  Ventura County coast
+    //   PZZ150  Pt Conception to Santa Monica Bay — inshore (to 60nm)
+    //   PZZ155  Santa Monica Bay to San Clemente — inshore
+    //   PZZ160  San Clemente Island waters
+    //   PZZ165  Santa Barbara Island waters
+    //   PZZ170  San Nicolas Island waters
+    //   PZZ173  San Miguel/Santa Cruz Island waters
+    //   PZZ775  Pt Conception to Santa Monica Bay — outer (beyond 60nm)
+    //   PZZ776  Santa Monica Bay to San Clemente — outer
+    //   PZZ780  San Clemente to Ensenada — outer
     const COASTAL_UGC = new Set([
       'CAZ041','CAZ042','CAZ043','CAZ044','CAZ045','CAZ046','CAZ047',
       'CAZ546','CAZ547','CAZ548','CAZ549','CAZ550','CAZ551','CAZ552','CAZ553',
       'CAZ048','CAZ049','CAZ050',
       'CAZ554','CAZ555','CAZ556',
       'CAZ018','CAZ019','CAZ518','CAZ519',
-      'PZZ150','PZZ155','PZZ160','PZZ165','PZZ170',
+      'PZZ150','PZZ155','PZZ160','PZZ165','PZZ170','PZZ173',
       'PZZ775','PZZ776','PZZ780',
     ]);
+
+    // Fetch alerts two ways and merge: by office (land+marine from LOX) and
+    // directly by marine zone (catches SCAs that may not surface via office filter)
+    const MARINE_ZONES = 'PZZ150,PZZ155,PZZ160,PZZ165,PZZ170,PZZ173,PZZ775,PZZ776,PZZ780';
+    const [alertsByOffice, alertsByZone] = await Promise.all([
+      fetch('https://api.weather.gov/alerts/active?office=LOX',
+        { headers: { 'User-Agent': 'LACFD-Marine-Report (pono.barnes@gmail.com)' } })
+        .then(r => r.ok ? r.json() : { features: [] }).catch(() => ({ features: [] })),
+      fetch(`https://api.weather.gov/alerts/active?zone=${MARINE_ZONES}`,
+        { headers: { 'User-Agent': 'LACFD-Marine-Report (pono.barnes@gmail.com)' } })
+        .then(r => r.ok ? r.json() : { features: [] }).catch(() => ({ features: [] })),
+    ]);
+
+    // Merge, dedup by alert ID
+    const seen = new Set();
+    const allLOXAlerts = [...(alertsByOffice.features || []), ...(alertsByZone.features || [])]
+      .filter(f => { const id = f.properties?.id; if (seen.has(id)) return false; seen.add(id); return true; });
 
     // Pre-filter: only keep alerts that touch at least one coastal/marine zone
     const allZoneAlerts = allLOXAlerts.filter(f => {
       const zones = f.properties?.geocode?.UGC || [];
+      // Marine zone alerts (PZZ*) from the zone query always pass through
+      if (zones.some(z => z.startsWith('PZZ'))) return true;
       return zones.some(z => COASTAL_UGC.has(z));
     });
 
@@ -3356,7 +3373,7 @@ function buildReport(nws, marine, atmos, tides, waterTemp, sstFallback) {
           <div class="section-header"><div class="section-tag">05B</div><div class="section-title">Operational Day / Solar Data</div><div class="section-line"></div></div>
           ${sunHTML}
         </div>
-      </div>`, 'NOAA STA. 9410660')}
+      </div>`, 'NOAA STA. 9410840')}
 
     ${makeSection('sec-06','06','NWS Point Forecast — Coastal LA',
       `<div class="panel">${nwsText}<div class="source-note">NATIONAL WEATHER SERVICE · LOS ANGELES OFFICE</div></div>`,
@@ -4171,7 +4188,7 @@ function buildUnifiedBriefing(nws, marine, atmos, tides, waterTempStr, swellRisk
       <div class="ub-source-bar">
         <span>NOAA/NWS API.WEATHER.GOV</span>
         <span>OPEN-METEO MARINE API</span>
-        <span>NOAA TIDES &amp; CURRENTS STA.9410660</span>
+        <span>NOAA TIDES &amp; CURRENTS STA.9410840</span>
         <span>NOAA.GOV/NDBC VIA PROXY</span>
         <span>WAVECAST.COM/SOCAL VIA PROXY</span>
       </div>
