@@ -3779,7 +3779,7 @@ async function loadWaveCastSection() {
   })();
 
   try {
-    const res = await fetch('/.netlify/functions/wavecast');
+    const res = await fetch(`/.netlify/functions/wavecast?t=${Date.now()}`);
 
     if (!res.ok) throw new Error(`Proxy returned ${res.status}`);
 
