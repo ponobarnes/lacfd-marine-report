@@ -3848,21 +3848,26 @@ async function loadWaveCastSection() {
     // Update unified briefing WaveCast subsection
     updateUBWaveCast(data);
 
-    // If the proxy returned a fallback images array (for lazy-loaded pages),
-    // append them as a gallery after the text so they always show up.
+    // Debug line — visible in the UI so we can tell if images were found at all
+    const imgDebug = `<div style="font-family:var(--mono);font-size:9px;color:#aaa;margin-bottom:8px">
+      proxy found ${data.imageCount || 0} images · ${data.tokenCount || 0} inline tokens</div>`;
+
+    // If the proxy returned a fallback images array, render them as a gallery.
+    // referrerpolicy="no-referrer" helps bypass hotlink-protection on some hosts.
     const fallbackImgs = (data.images && data.images.length > 0)
-      ? `<div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
+      ? `<div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(0,0,0,0.1)">
            <div style="font-family:var(--font-title);font-size:11px;font-weight:800;letter-spacing:1px;color:#888;text-transform:uppercase;margin-bottom:10px">FORECAST CHARTS</div>
            ${data.images.map(img => `
              <div style="margin-bottom:14px;text-align:center">
                <img src="${img.src}" alt="${img.alt || 'WaveCast chart'}"
-                    style="max-width:100%;border-radius:6px;border:1px solid var(--border);display:block;margin:0 auto"
+                    style="max-width:100%;border-radius:6px;border:1px solid #ddd;display:block;margin:0 auto"
                     loading="lazy"
-                    onerror="this.closest('div').style.display='none'">
+                    referrerpolicy="no-referrer"
+                    crossorigin="anonymous">
                ${img.alt ? `<div style="font-family:var(--mono);font-size:9px;color:#888;margin-top:4px;letter-spacing:0.5px">${img.alt}</div>` : ''}
              </div>`).join('')}
          </div>`
-      : '';
+      : `<div style="font-family:var(--mono);font-size:10px;color:#aaa;margin-top:12px">No forecast charts found in proxy response.</div>`;
 
     el.innerHTML = `
       <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
@@ -3882,6 +3887,7 @@ async function loadWaveCastSection() {
           </div>
         </div>
         <div style="padding:16px 18px;background:#fff;max-height:800px;overflow-y:auto">
+          ${imgDebug}
           <div style="font-family:var(--font-title);font-size:20px;font-weight:900;color:var(--brand-red);letter-spacing:0.5px;margin-bottom:12px">${data.title}</div>
           <div style="font-family:var(--font-body);">${formattedLines}</div>
           ${fallbackImgs}

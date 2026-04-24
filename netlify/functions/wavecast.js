@@ -88,18 +88,23 @@ function extractImgSrc(attrs, base) {
   return null;
 }
 
-// Returns true for images that look like content charts, not icons/logos
+// Returns true for images that look like content charts, not icons/logos.
+// Intentionally permissive — better to include a few extras than miss real charts.
 function isContentImage(src) {
   if (!src) return false;
   if (src.startsWith('data:')) return false;
-  // Skip obvious UI / branding elements
-  if (/\/(icon|logo|avatar|sprite|pixel|badge|button|gravatar|emoji|smiley)\b/i.test(src)) return false;
+  // Skip WordPress core UI assets
   if (/wp-includes\/images/i.test(src)) return false;
-  // Must be a raster image (jpg/png/gif/webp) — skip SVG icons
-  if (!/\.(jpe?g|png|gif|webp)(\?|$)/i.test(src)) return false;
-  // Skip very short filenames
+  if (/\/emoji\//i.test(src)) return false;
+  // Skip gravatar profile pictures
+  if (/gravatar\.com/i.test(src)) return false;
+  // Must be a raster image — accept jpg, png, gif, webp, and URLs with no extension
+  // (CDN-served images sometimes have no extension in the path)
+  const lower = src.toLowerCase();
+  if (/\.(svg|ico|cur|bmp)(\?|$)/.test(lower)) return false;
+  // Skip very short filenames — likely tracking pixels or spacers
   const fname = (src.split('/').pop() || '').split('?')[0];
-  if (fname.length < 6) return false;
+  if (fname.length < 4) return false;
   return true;
 }
 
@@ -275,17 +280,18 @@ exports.handler = async (event) => {
     const allImages = extractAllImages(html, base)
       .filter(img => !tokenUrls.has(img.src)); // don't duplicate inline tokens
 
-    const trimmed = text.length > 12000
-      ? text.substring(0, 12000) + '\n\n[See full report at wavecast.com/socal/]'
-      : text;
+    // No hard character limit — WaveCast forecasts can be long
+    // Netlify function response limit is 6MB; a text forecast is well under that
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         title,
-        text: trimmed,
-        images: allImages,          // full-page image list (fallback gallery)
+        text,
+        images: allImages,           // full-page image list (fallback gallery)
+        imageCount: allImages.length, // debug: how many images were found
+        tokenCount: tokenUrls.size,   // debug: how many inline tokens were found
         url: 'https://wavecast.com/socal/',
         fetched: new Date().toISOString(),
       })
