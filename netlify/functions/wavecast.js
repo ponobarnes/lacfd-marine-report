@@ -240,6 +240,7 @@ exports.handler = async (event) => {
         imageCount: images.length,
         tokenCount,
         source,
+        version: 'v4-rss',
         url: BASE,
         fetched: new Date().toISOString(),
       })
