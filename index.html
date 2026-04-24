@@ -3810,18 +3810,30 @@ async function loadWaveCastSection() {
       }
     }
 
-    // Also strip any remaining "Surf Charts for SoCal … Sunset Cliffs" block
+    // Strip nav boilerplate "Surf Charts for SoCal … Sunset Cliffs" but
+    // preserve any [[IMG:...]] tokens that may follow in the same area
     cleanText = cleanText
-      .replace(/Surf Charts for SoCal[\s\S]*?Sunset Cliffs/gi, '')
+      .replace(/Surf Charts for SoCal[^\[]*?Sunset Cliffs/gi, '')
       .replace(/\n{3,}/g, '\n\n')
       .trim();
 
-    // Format the text: split into paragraphs, highlight section headers
+    // Format the text: split into lines, render text + inline images
     const lines = cleanText.split('\n').filter(l => l.trim());
     const formattedLines = lines.map(line => {
       const t = line.trim();
-      if (t.startsWith('■ ') || t.startsWith('▸ ')) {
-        // Section header
+      // Inline image token — [[IMG:url|alt]]
+      const imgMatch = t.match(/^\[\[IMG:([^\|]+)\|?(.*?)\]\]$/);
+      if (imgMatch) {
+        const src = imgMatch[1].trim();
+        const alt = imgMatch[2].trim() || 'WaveCast surf chart';
+        return `<div style="margin:14px 0;text-align:center">
+          <img src="${src}" alt="${alt}"
+               style="max-width:100%;border-radius:6px;border:1px solid var(--border);display:block;margin:0 auto"
+               loading="lazy"
+               onerror="this.closest('div').style.display='none'">
+          ${alt ? `<div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:4px;letter-spacing:0.5px">${alt}</div>` : ''}
+        </div>`;
+      } else if (t.startsWith('■ ') || t.startsWith('▸ ')) {
         return `<div style="font-family:var(--font-title);font-size:15px;font-weight:800;color:var(--brand-navy);letter-spacing:1px;text-transform:uppercase;margin:18px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--border)">${t.replace(/^[■▸] /, '')}</div>`;
       } else if (t.startsWith('────')) {
         return `<hr style="border:none;border-top:1px solid var(--border);margin:12px 0">`;

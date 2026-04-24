@@ -53,8 +53,35 @@ function extractTitle(html) {
   return match[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim().split('|')[0].trim();
 }
 
-// Extract the main forecast text from the page HTML
-function extractContent(html) {
+// Resolve a potentially-relative URL against a base
+function resolveUrl(src, base) {
+  if (!src) return null;
+  try {
+    return new URL(src, base).href;
+  } catch(e) {
+    return src;
+  }
+}
+
+// Returns true for images that look like content charts (not icons/logos/avatars)
+function isContentImage(src, alt) {
+  if (!src) return false;
+  // Skip tiny tracking pixels, data URIs, and obvious UI icons
+  if (src.startsWith('data:')) return false;
+  if (/\/(icon|logo|avatar|sprite|pixel|badge|button)\b/i.test(src)) return false;
+  // Skip very short filenames that are likely icons
+  const fname = src.split('/').pop().split('?')[0];
+  if (fname.length < 5) return false;
+  // Prefer known chart patterns (jpg/png/gif/webp, not svg icons)
+  return /\.(jpe?g|png|gif|webp)(\?|$)/i.test(src);
+}
+
+// Extract the main forecast text from the page HTML.
+// Images inside the content are replaced with [[IMG:url:alt]] tokens so they
+// can be re-inserted at the correct position when rendering in the browser.
+function extractContent(html, pageUrl) {
+  const BASE = pageUrl || 'https://wavecast.com/socal/';
+
   // Remove noisy sections
   let cleaned = html
     .replace(/<!--[\s\S]*?-->/g, '')
@@ -86,6 +113,27 @@ function extractContent(html) {
 
   if (!contentHtml) contentHtml = cleaned;
 
+  // ── Replace <img> tags with inline tokens BEFORE stripping HTML ──────────
+  // This preserves image positions within the text flow.
+  contentHtml = contentHtml.replace(/<img\b([^>]*)>/gi, (match, attrs) => {
+    // Extract src
+    const srcMatch = attrs.match(/src=["']([^"']+)["']/i) ||
+                     attrs.match(/src=([^\s>]+)/i);
+    const src = srcMatch ? resolveUrl(srcMatch[1].trim(), BASE) : null;
+
+    // Extract alt / title for caption
+    const altMatch = attrs.match(/alt=["']([^"']*)["']/i);
+    const titleMatch = attrs.match(/title=["']([^"']*)["']/i);
+    const alt = (altMatch && altMatch[1]) || (titleMatch && titleMatch[1]) || '';
+
+    if (src && isContentImage(src, alt)) {
+      // Encode alt to avoid breaking the token (replace | with space)
+      const safeAlt = alt.replace(/\|/g, ' ').replace(/\n/g, ' ').trim();
+      return `\n[[IMG:${src}|${safeAlt}]]\n`;
+    }
+    return ''; // drop non-content images
+  });
+
   // Convert block-level HTML to readable plain text with structure
   let text = contentHtml
     .replace(/<h1[^>]*>([\s\S]*?)<\/h1>/gi, '\n\n■ $1\n')
@@ -111,13 +159,12 @@ function extractContent(html) {
     .replace(/&#8216;|&#8217;/g, "'")
     .replace(/&#8220;|&#8221;/g, '"')
     .replace(/&#[0-9]+;/g, ' ')
-    // Clean whitespace
+    // Clean whitespace — but preserve [[IMG:...]] tokens on their own lines
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{4,}/g, '\n\n\n')
     .trim();
 
   // Strip WaveCast nav/subscribe boilerplate that appears before the actual forecast.
-  // Strategy: find the subscribe notice and keep only what follows it.
   const cutMarkers = [
     'Get notified when this report is updated.',
     'Get notified when this report is updated',
@@ -165,7 +212,7 @@ exports.handler = async (event) => {
     }
 
     const title = extractTitle(html);
-    const text = extractContent(html);
+    const text = extractContent(html, 'https://wavecast.com/socal/');
 
     // Trim to a reasonable size but keep full forecast content
     const trimmed = text.length > 10000
