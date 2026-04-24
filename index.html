@@ -3848,9 +3848,9 @@ async function loadWaveCastSection() {
     // Update unified briefing WaveCast subsection
     updateUBWaveCast(data);
 
-    // Debug line — visible in the UI so we can tell if images were found at all
+    // Debug line — shows version, source, and image count to diagnose deployment
     const imgDebug = `<div style="font-family:var(--mono);font-size:9px;color:#aaa;margin-bottom:8px">
-      proxy found ${data.imageCount || 0} images · ${data.tokenCount || 0} inline tokens</div>`;
+      proxy ${data.version || 'v?'} · source: ${data.source || '?'} · found ${data.imageCount || 0} images · ${data.tokenCount || 0} tokens</div>`;
 
     // If the proxy returned a fallback images array, render them as a gallery.
     // referrerpolicy="no-referrer" helps bypass hotlink-protection on some hosts.
