@@ -236,11 +236,8 @@ exports.handler = async (event) => {
       statusCode: 200,
       headers,
       body: JSON.stringify({
-        title, text, images,
-        imageCount: images.length,
-        tokenCount,
+        title, text,
         source,
-        version: 'v4-rss',
         url: BASE,
         fetched: new Date().toISOString(),
       })
