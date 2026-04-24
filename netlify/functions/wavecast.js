@@ -143,8 +143,14 @@ function parseRSS(xml, base) {
     const idx = text.indexOf(marker);
     if (idx !== -1) { text = text.slice(idx + marker.length).trim(); break; }
   }
-  text = text.replace(/Surf Charts for SoCal[^\[]*?Sunset Cliffs/gi, '')
-             .replace(/\n{4,}/g, '\n\n\n').trim();
+  text = text
+    .replace(/Surf Charts for SoCal[^\[]*?Sunset Cliffs/gi, '')
+    // Strip donation / fundraising lines
+    .replace(/Why Donate\??/gi, '')
+    .replace(/See donation progress report\.?/gi, '')
+    .replace(/donation progress report\.?/gi, '')
+    .replace(/\bDonate\b.*\n/gi, '')
+    .replace(/\n{4,}/g, '\n\n\n').trim();
 
   return { title, text, images };
 }
@@ -187,6 +193,12 @@ function scrapeHTML(html, base) {
     const idx = text.indexOf(marker);
     if (idx !== -1) { text = text.slice(idx + marker.length).trim(); break; }
   }
+  text = text
+    .replace(/Why Donate\??/gi, '')
+    .replace(/See donation progress report\.?/gi, '')
+    .replace(/donation progress report\.?/gi, '')
+    .replace(/\bDonate\b.*\n/gi, '')
+    .replace(/\n{3,}/g, '\n\n').trim();
 
   return { title, text, images: [] };
 }
