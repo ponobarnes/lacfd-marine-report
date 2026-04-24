@@ -1,147 +1,156 @@
 // ============================================================
 // LACFD LIFEGUARD — WaveCast SoCal Forecast Proxy
-// Netlify serverless function — fetches the WaveCast SoCal
-// forecast page (published Sun/Tue/Thu) and returns the
-// parsed report text + embedded images to the marine weather dashboard.
+// Fetches the WaveCast SoCal RSS feed (WordPress always puts real
+// absolute image URLs in RSS — no JS lazy-loading to work around).
+// Falls back to scraping the HTML page if the feed fails.
 //
 // Deploy to: netlify/functions/wavecast.js
 // Available at: /.netlify/functions/wavecast
 // ============================================================
 
 const https = require('https');
-const http = require('http');
+const http  = require('http');
 
-// Helper: fetch a URL with redirect support
-function fetchPage(url, redirectCount = 0) {
+// ── HTTP fetch with redirect support ─────────────────────────────────────
+function fetchUrl(url, redirectCount = 0) {
   return new Promise((resolve, reject) => {
     if (redirectCount > 5) return reject(new Error('Too many redirects'));
-
     const lib = url.startsWith('https') ? https : http;
-
     lib.get(url, {
       headers: {
-        // Use a desktop UA — some sites serve stripped mobile HTML without images
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
         'Accept-Encoding': 'identity',
         'Connection': 'keep-alive',
         'Referer': 'https://wavecast.com/',
       }
-    }, (res) => {
-      if ((res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307 || res.statusCode === 308) && res.headers.location) {
-        const nextUrl = res.headers.location.startsWith('http')
+    }, res => {
+      if ([301,302,307,308].includes(res.statusCode) && res.headers.location) {
+        const next = res.headers.location.startsWith('http')
           ? res.headers.location
           : new URL(res.headers.location, url).href;
-        fetchPage(nextUrl, redirectCount + 1).then(resolve).catch(reject);
-        return;
+        return fetchUrl(next, redirectCount + 1).then(resolve).catch(reject);
       }
-
       let data = '';
       res.on('data', chunk => data += chunk);
-      res.on('end', () => resolve({ html: data, status: res.statusCode, finalUrl: url }));
+      res.on('end', () => resolve({ body: data, status: res.statusCode }));
     }).on('error', reject);
   });
 }
 
-// Resolve a relative URL to absolute
+// ── Resolve relative URL ──────────────────────────────────────────────────
 function resolveUrl(src, base) {
   if (!src) return null;
   src = src.trim();
-  if (!src || src === '#' || src.startsWith('javascript:')) return null;
-  try {
-    return new URL(src, base).href;
-  } catch(e) {
-    return null;
-  }
+  if (!src || src.startsWith('javascript:')) return null;
+  try { return new URL(src, base).href; } catch(e) { return null; }
 }
 
-// Extract the best src from an <img> tag's attribute string.
-// WordPress lazy-loading hides the real URL in data-src / data-lazy-src / srcset.
-function extractImgSrc(attrs, base) {
-  // Ordered priority: real src attrs first, then lazy-load fallbacks
-  const attrNames = [
-    'data-lazy-src', 'data-src', 'data-original', 'data-full-url',
-    'data-large-file', 'data-medium-file',
-    'src',
-  ];
-
-  for (const attr of attrNames) {
-    const re = new RegExp(`${attr}=["']([^"']+)["']`, 'i');
-    const m = attrs.match(re);
-    if (m && m[1] && !m[1].startsWith('data:') && m[1].trim()) {
-      return resolveUrl(m[1], base);
-    }
-  }
-
-  // Also check srcset — take the last (largest) URL
-  const srcsetMatch = attrs.match(/srcset=["']([^"']+)["']/i);
-  if (srcsetMatch) {
-    const parts = srcsetMatch[1].split(',').map(s => s.trim().split(/\s+/)[0]).filter(Boolean);
-    for (let i = parts.length - 1; i >= 0; i--) {
-      if (!parts[i].startsWith('data:')) {
-        return resolveUrl(parts[i], base);
-      }
-    }
-  }
-
-  return null;
-}
-
-// Returns true for images that look like content charts, not icons/logos.
-// Intentionally permissive — better to include a few extras than miss real charts.
+// ── Is this a real content image (not an icon/pixel/gravatar)? ────────────
 function isContentImage(src) {
-  if (!src) return false;
-  if (src.startsWith('data:')) return false;
-  // Skip WordPress core UI assets
+  if (!src || src.startsWith('data:')) return false;
   if (/wp-includes\/images/i.test(src)) return false;
-  if (/\/emoji\//i.test(src)) return false;
-  // Skip gravatar profile pictures
-  if (/gravatar\.com/i.test(src)) return false;
-  // Must be a raster image — accept jpg, png, gif, webp, and URLs with no extension
-  // (CDN-served images sometimes have no extension in the path)
-  const lower = src.toLowerCase();
-  if (/\.(svg|ico|cur|bmp)(\?|$)/.test(lower)) return false;
-  // Skip very short filenames — likely tracking pixels or spacers
+  if (/gravatar\.com|\/emoji\//i.test(src)) return false;
+  if (/\.(svg|ico|cur|bmp)(\?|$)/i.test(src)) return false;
   const fname = (src.split('/').pop() || '').split('?')[0];
   if (fname.length < 4) return false;
   return true;
 }
 
-// Extract page title
-function extractTitle(html) {
-  const match =
-    html.match(/<h1[^>]*class="[^"]*entry-title[^"]*"[^>]*>([\s\S]*?)<\/h1>/i) ||
-    html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i) ||
-    html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-  if (!match) return 'WaveCast SoCal Forecast';
-  return match[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim().split('|')[0].trim();
-}
+// ── Parse the WordPress RSS/Atom feed ────────────────────────────────────
+// RSS always contains real absolute image URLs — no JS lazy-loading.
+function parseRSS(xml, base) {
+  // Grab the first <item>
+  const itemMatch = xml.match(/<item\b[^>]*>([\s\S]*?)<\/item>/i);
+  if (!itemMatch) return null;
+  const item = itemMatch[1];
 
-// Scan ALL img tags across the full HTML and return deduplicated content images.
-// This is the reliable fallback — it doesn't depend on content-area extraction.
-function extractAllImages(html, base) {
-  const seen = new Set();
+  // Title
+  const titleMatch = item.match(/<title[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/i);
+  const title = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, '').trim() : 'WaveCast SoCal Forecast';
+
+  // Full content — WordPress puts it in <content:encoded> or <description>
+  const contentMatch =
+    item.match(/<content:encoded[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/content:encoded>/i) ||
+    item.match(/<description[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/i);
+  const rawContent = contentMatch ? contentMatch[1] : '';
+
+  // Extract images from the RSS content HTML — these are always real URLs
   const images = [];
-
+  const seen = new Set();
   const imgRe = /<img\b([^>]*?)(?:\/>|>)/gi;
   let m;
-  while ((m = imgRe.exec(html)) !== null) {
-    const src = extractImgSrc(m[1], base);
+  while ((m = imgRe.exec(rawContent)) !== null) {
+    const srcMatch = m[1].match(/src=["']([^"']+)["']/i);
+    const src = srcMatch ? resolveUrl(srcMatch[1], base) : null;
     if (src && isContentImage(src) && !seen.has(src)) {
       seen.add(src);
       const altMatch = m[1].match(/alt=["']([^"']*)["']/i);
-      const alt = altMatch ? altMatch[1].trim() : '';
-      images.push({ src, alt });
+      images.push({ src, alt: altMatch ? altMatch[1].trim() : '' });
     }
   }
 
-  return images;
+  // Also grab <enclosure> image tags
+  const encRe = /<enclosure\b[^>]*type=["']image[^"']*["'][^>]*url=["']([^"']+)["'][^>]*\/?>/gi;
+  while ((m = encRe.exec(item)) !== null) {
+    const src = resolveUrl(m[1], base);
+    if (src && isContentImage(src) && !seen.has(src)) {
+      seen.add(src);
+      images.push({ src, alt: '' });
+    }
+  }
+
+  // Convert RSS content HTML to text, replacing images with tokens
+  let html = rawContent;
+
+  // Re-scan and token-ize images in order of appearance
+  html = html.replace(/<img\b([^>]*?)(?:\/>|>)/gi, (match, attrs) => {
+    const srcMatch = attrs.match(/src=["']([^"']+)["']/i);
+    const src = srcMatch ? resolveUrl(srcMatch[1], base) : null;
+    if (src && isContentImage(src)) {
+      const altMatch = attrs.match(/alt=["']([^"']*)["']/i);
+      const alt = (altMatch ? altMatch[1] : '').replace(/[|\n]/g, ' ').trim();
+      return `\n[[IMG:${src}|${alt}]]\n`;
+    }
+    return '';
+  });
+
+  // Strip remaining HTML → plain text
+  let text = html
+    .replace(/<h1[^>]*>([\s\S]*?)<\/h1>/gi, '\n\n■ $1\n')
+    .replace(/<h2[^>]*>([\s\S]*?)<\/h2>/gi, '\n\n▸ $1\n')
+    .replace(/<h3[^>]*>([\s\S]*?)<\/h3>/gi, '\n\n$1\n')
+    .replace(/<h[4-6][^>]*>([\s\S]*?)<\/h[4-6]>/gi, '\n$1\n')
+    .replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, '\n  • $1')
+    .replace(/<hr[^>]*>/gi, '\n────────────────────\n')
+    .replace(/<strong[^>]*>([\s\S]*?)<\/strong>/gi, '$1')
+    .replace(/<em[^>]*>([\s\S]*?)<\/em>/gi, '$1')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>').replace(/&quot;/g, '"')
+    .replace(/&#8212;/g, '—').replace(/&#8211;/g, '–')
+    .replace(/&#8216;|&#8217;/g, "'").replace(/&#8220;|&#8221;/g, '"')
+    .replace(/&#[0-9]+;/g, ' ')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{4,}/g, '\n\n\n')
+    .trim();
+
+  // Strip subscribe boilerplate
+  for (const marker of ['Get notified when this report is updated.', 'Subscribe to be notified:']) {
+    const idx = text.indexOf(marker);
+    if (idx !== -1) { text = text.slice(idx + marker.length).trim(); break; }
+  }
+  text = text.replace(/Surf Charts for SoCal[^\[]*?Sunset Cliffs/gi, '')
+             .replace(/\n{4,}/g, '\n\n\n').trim();
+
+  return { title, text, images };
 }
 
-// Extract the main forecast text, replacing inline images with [[IMG:url|alt]] tokens.
-function extractContent(html, base) {
-  // Remove noisy chrome
+// ── Fallback: scrape the HTML page (text only, no images) ─────────────────
+function scrapeHTML(html, base) {
   let cleaned = html
     .replace(/<!--[\s\S]*?-->/g, '')
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
@@ -151,97 +160,38 @@ function extractContent(html, base) {
     .replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, '')
     .replace(/<aside\b[^<]*(?:(?!<\/aside>)<[^<]*)*<\/aside>/gi, '');
 
-  // Try to find the main post content block — try multiple selectors
-  // Use a greedy inner match for divs so we don't stop at the first nested </div>
-  let contentHtml = null;
+  const titleMatch = cleaned.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i) ||
+                     cleaned.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  const title = titleMatch
+    ? titleMatch[1].replace(/<[^>]+>/g,'').trim().split('|')[0].trim()
+    : 'WaveCast SoCal Forecast';
 
-  // Strategy 1: <article> tag (most reliable on WordPress)
   const articleMatch = cleaned.match(/<article\b[^>]*>([\s\S]*)<\/article>/i);
-  if (articleMatch && articleMatch[1].length > 300) {
-    contentHtml = articleMatch[1];
-  }
+  const contentHtml = (articleMatch && articleMatch[1].length > 300)
+    ? articleMatch[1] : cleaned;
 
-  // Strategy 2: .entry-content or .post-content div — use greedy match
-  if (!contentHtml) {
-    const divMatch = cleaned.match(/<div[^>]*class="[^"]*(?:entry|post)[- ]content[^"]*"[^>]*>([\s\S]*)<\/div>/i);
-    if (divMatch && divMatch[1].length > 300) {
-      contentHtml = divMatch[1];
-    }
-  }
-
-  // Strategy 3: <main> tag
-  if (!contentHtml) {
-    const mainMatch = cleaned.match(/<main\b[^>]*>([\s\S]*)<\/main>/i);
-    if (mainMatch && mainMatch[1].length > 300) {
-      contentHtml = mainMatch[1];
-    }
-  }
-
-  // Fallback: use the whole cleaned HTML
-  if (!contentHtml) contentHtml = cleaned;
-
-  // ── Replace <img> tags with inline tokens BEFORE stripping HTML ──────────
-  contentHtml = contentHtml.replace(/<img\b([^>]*?)(?:\/>|>)/gi, (match, attrs) => {
-    const src = extractImgSrc(attrs, base);
-    if (src && isContentImage(src)) {
-      const altMatch = attrs.match(/alt=["']([^"']*)["']/i);
-      const alt = (altMatch ? altMatch[1] : '').replace(/[|\n]/g, ' ').trim();
-      return `\n[[IMG:${src}|${alt}]]\n`;
-    }
-    return '';
-  });
-
-  // Convert HTML to structured plain text
   let text = contentHtml
+    .replace(/<img\b[^>]*>/gi, '')
     .replace(/<h1[^>]*>([\s\S]*?)<\/h1>/gi, '\n\n■ $1\n')
     .replace(/<h2[^>]*>([\s\S]*?)<\/h2>/gi, '\n\n▸ $1\n')
     .replace(/<h3[^>]*>([\s\S]*?)<\/h3>/gi, '\n\n$1\n')
-    .replace(/<h[4-6][^>]*>([\s\S]*?)<\/h[4-6]>/gi, '\n$1\n')
-    .replace(/<p[^>]*>/gi, '\n')
-    .replace(/<\/p>/gi, '\n')
+    .replace(/<p[^>]*>/gi, '\n').replace(/<\/p>/gi, '\n')
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, '\n  • $1')
-    .replace(/<hr[^>]*>/gi, '\n────────────────────\n')
-    .replace(/<strong[^>]*>([\s\S]*?)<\/strong>/gi, '$1')
-    .replace(/<em[^>]*>([\s\S]*?)<\/em>/gi, '$1')
     .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#8212;/g, '—')
-    .replace(/&#8211;/g, '–')
-    .replace(/&#8216;|&#8217;/g, "'")
-    .replace(/&#8220;|&#8221;/g, '"')
-    .replace(/&#[0-9]+;/g, ' ')
-    .replace(/[ \t]+/g, ' ')
-    .replace(/\n{4,}/g, '\n\n\n')
-    .trim();
+    .replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')
+    .replace(/&#8212;/g,'—').replace(/&#8211;/g,'–')
+    .replace(/[ \t]+/g,' ').replace(/\n{4,}/g,'\n\n\n').trim();
 
-  // Strip WaveCast subscribe/nav boilerplate before the forecast body
-  const cutMarkers = [
-    'Get notified when this report is updated.',
-    'Get notified when this report is updated',
-    'Subscribe to be notified:',
-  ];
-  for (const marker of cutMarkers) {
+  for (const marker of ['Get notified when this report is updated.', 'Subscribe to be notified:']) {
     const idx = text.indexOf(marker);
-    if (idx !== -1) {
-      text = text.slice(idx + marker.length).trim();
-      break;
-    }
+    if (idx !== -1) { text = text.slice(idx + marker.length).trim(); break; }
   }
 
-  // Remove surf-chart nav block (but keep any [[IMG:...]] tokens)
-  text = text
-    .replace(/Surf Charts for SoCal[^\[]*?Sunset Cliffs/gi, '')
-    .replace(/\n{4,}/g, '\n\n\n')
-    .trim();
-
-  return text;
+  return { title, text, images: [] };
 }
 
+// ── Handler ───────────────────────────────────────────────────────────────
 exports.handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -250,54 +200,52 @@ exports.handler = async (event) => {
     'Cache-Control': 'no-cache',
   };
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
-  }
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
+
+  const BASE = 'https://wavecast.com/socal/';
 
   try {
-    const { html, status, finalUrl } = await fetchPage('https://wavecast.com/socal/');
-    const base = finalUrl || 'https://wavecast.com/socal/';
-
-    if (status !== 200) {
-      return {
-        statusCode: 502,
-        headers,
-        body: JSON.stringify({ error: `WaveCast returned HTTP ${status}` })
-      };
+    // ── Try RSS feed first ────────────────────────────────────────────────
+    let result = null;
+    let source = 'rss';
+    try {
+      const { body: rssBody, status: rssStatus } = await fetchUrl('https://wavecast.com/socal/feed/');
+      if (rssStatus === 200 && rssBody.includes('<rss') || rssBody.includes('<feed')) {
+        result = parseRSS(rssBody, BASE);
+      }
+    } catch(e) {
+      console.warn('RSS fetch failed:', e.message);
     }
 
-    const title = extractTitle(html);
-    const text = extractContent(html, base);
+    // ── Fall back to HTML page scrape ─────────────────────────────────────
+    if (!result) {
+      source = 'html';
+      const { body: htmlBody, status } = await fetchUrl(BASE);
+      if (status !== 200) {
+        return { statusCode: 502, headers, body: JSON.stringify({ error: `WaveCast returned HTTP ${status}` }) };
+      }
+      result = scrapeHTML(htmlBody, BASE);
+    }
 
-    // Also extract a deduplicated image list from the full page as a reliable
-    // fallback — the frontend will use this if inline tokens didn't parse correctly.
-    // Filter out images already present as tokens in the text.
-    const tokenUrls = new Set();
-    const tokenRe = /\[\[IMG:([^\|]+)\|/g;
-    let tm;
-    while ((tm = tokenRe.exec(text)) !== null) tokenUrls.add(tm[1]);
+    const { title, text, images } = result;
 
-    const allImages = extractAllImages(html, base)
-      .filter(img => !tokenUrls.has(img.src)); // don't duplicate inline tokens
-
-    // No hard character limit — WaveCast forecasts can be long
-    // Netlify function response limit is 6MB; a text forecast is well under that
+    // Count inline tokens for debug
+    const tokenCount = (text.match(/\[\[IMG:/g) || []).length;
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
-        title,
-        text,
-        images: allImages,           // full-page image list (fallback gallery)
-        imageCount: allImages.length, // debug: how many images were found
-        tokenCount: tokenUrls.size,   // debug: how many inline tokens were found
-        url: 'https://wavecast.com/socal/',
+        title, text, images,
+        imageCount: images.length,
+        tokenCount,
+        source,
+        url: BASE,
         fetched: new Date().toISOString(),
       })
     };
 
-  } catch (e) {
+  } catch(e) {
     console.error('WaveCast proxy error:', e.message);
     return {
       statusCode: 502,
