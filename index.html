@@ -3848,6 +3848,22 @@ async function loadWaveCastSection() {
     // Update unified briefing WaveCast subsection
     updateUBWaveCast(data);
 
+    // If the proxy returned a fallback images array (for lazy-loaded pages),
+    // append them as a gallery after the text so they always show up.
+    const fallbackImgs = (data.images && data.images.length > 0)
+      ? `<div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
+           <div style="font-family:var(--font-title);font-size:11px;font-weight:800;letter-spacing:1px;color:#888;text-transform:uppercase;margin-bottom:10px">FORECAST CHARTS</div>
+           ${data.images.map(img => `
+             <div style="margin-bottom:14px;text-align:center">
+               <img src="${img.src}" alt="${img.alt || 'WaveCast chart'}"
+                    style="max-width:100%;border-radius:6px;border:1px solid var(--border);display:block;margin:0 auto"
+                    loading="lazy"
+                    onerror="this.closest('div').style.display='none'">
+               ${img.alt ? `<div style="font-family:var(--mono);font-size:9px;color:#888;margin-top:4px;letter-spacing:0.5px">${img.alt}</div>` : ''}
+             </div>`).join('')}
+         </div>`
+      : '';
+
     el.innerHTML = `
       <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
         <div style="background:var(--brand-navy);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
@@ -3865,9 +3881,10 @@ async function loadWaveCastSection() {
             </a>
           </div>
         </div>
-        <div style="padding:16px 18px;background:#fff;max-height:600px;overflow-y:auto">
+        <div style="padding:16px 18px;background:#fff;max-height:800px;overflow-y:auto">
           <div style="font-family:var(--font-title);font-size:20px;font-weight:900;color:var(--brand-red);letter-spacing:0.5px;margin-bottom:12px">${data.title}</div>
           <div style="font-family:var(--font-body);">${formattedLines}</div>
+          ${fallbackImgs}
         </div>
         <div style="background:var(--bg-card);padding:8px 16px;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase">
           SOURCE: WAVECAST.COM/SOCAL · PROXY: /.NETLIFY/FUNCTIONS/WAVECAST · PUBLISHES SUN/TUE/THU

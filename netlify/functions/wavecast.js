@@ -2,7 +2,7 @@
 // LACFD LIFEGUARD — WaveCast SoCal Forecast Proxy
 // Netlify serverless function — fetches the WaveCast SoCal
 // forecast page (published Sun/Tue/Thu) and returns the
-// parsed report text to the marine weather dashboard.
+// parsed report text + embedded images to the marine weather dashboard.
 //
 // Deploy to: netlify/functions/wavecast.js
 // Available at: /.netlify/functions/wavecast
@@ -20,16 +20,16 @@ function fetchPage(url, redirectCount = 0) {
 
     lib.get(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
+        // Use a desktop UA — some sites serve stripped mobile HTML without images
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
         'Accept-Encoding': 'identity',
         'Connection': 'keep-alive',
         'Referer': 'https://wavecast.com/',
       }
     }, (res) => {
-      // Follow redirects
-      if ((res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307) && res.headers.location) {
+      if ((res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307 || res.statusCode === 308) && res.headers.location) {
         const nextUrl = res.headers.location.startsWith('http')
           ? res.headers.location
           : new URL(res.headers.location, url).href;
@@ -39,50 +39,104 @@ function fetchPage(url, redirectCount = 0) {
 
       let data = '';
       res.on('data', chunk => data += chunk);
-      res.on('end', () => resolve({ html: data, status: res.statusCode, url }));
+      res.on('end', () => resolve({ html: data, status: res.statusCode, finalUrl: url }));
     }).on('error', reject);
   });
+}
+
+// Resolve a relative URL to absolute
+function resolveUrl(src, base) {
+  if (!src) return null;
+  src = src.trim();
+  if (!src || src === '#' || src.startsWith('javascript:')) return null;
+  try {
+    return new URL(src, base).href;
+  } catch(e) {
+    return null;
+  }
+}
+
+// Extract the best src from an <img> tag's attribute string.
+// WordPress lazy-loading hides the real URL in data-src / data-lazy-src / srcset.
+function extractImgSrc(attrs, base) {
+  // Ordered priority: real src attrs first, then lazy-load fallbacks
+  const attrNames = [
+    'data-lazy-src', 'data-src', 'data-original', 'data-full-url',
+    'data-large-file', 'data-medium-file',
+    'src',
+  ];
+
+  for (const attr of attrNames) {
+    const re = new RegExp(`${attr}=["']([^"']+)["']`, 'i');
+    const m = attrs.match(re);
+    if (m && m[1] && !m[1].startsWith('data:') && m[1].trim()) {
+      return resolveUrl(m[1], base);
+    }
+  }
+
+  // Also check srcset — take the last (largest) URL
+  const srcsetMatch = attrs.match(/srcset=["']([^"']+)["']/i);
+  if (srcsetMatch) {
+    const parts = srcsetMatch[1].split(',').map(s => s.trim().split(/\s+/)[0]).filter(Boolean);
+    for (let i = parts.length - 1; i >= 0; i--) {
+      if (!parts[i].startsWith('data:')) {
+        return resolveUrl(parts[i], base);
+      }
+    }
+  }
+
+  return null;
+}
+
+// Returns true for images that look like content charts, not icons/logos
+function isContentImage(src) {
+  if (!src) return false;
+  if (src.startsWith('data:')) return false;
+  // Skip obvious UI / branding elements
+  if (/\/(icon|logo|avatar|sprite|pixel|badge|button|gravatar|emoji|smiley)\b/i.test(src)) return false;
+  if (/wp-includes\/images/i.test(src)) return false;
+  // Must be a raster image (jpg/png/gif/webp) — skip SVG icons
+  if (!/\.(jpe?g|png|gif|webp)(\?|$)/i.test(src)) return false;
+  // Skip very short filenames
+  const fname = (src.split('/').pop() || '').split('?')[0];
+  if (fname.length < 6) return false;
+  return true;
 }
 
 // Extract page title
 function extractTitle(html) {
   const match =
+    html.match(/<h1[^>]*class="[^"]*entry-title[^"]*"[^>]*>([\s\S]*?)<\/h1>/i) ||
     html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i) ||
     html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
   if (!match) return 'WaveCast SoCal Forecast';
   return match[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim().split('|')[0].trim();
 }
 
-// Resolve a potentially-relative URL against a base
-function resolveUrl(src, base) {
-  if (!src) return null;
-  try {
-    return new URL(src, base).href;
-  } catch(e) {
-    return src;
+// Scan ALL img tags across the full HTML and return deduplicated content images.
+// This is the reliable fallback — it doesn't depend on content-area extraction.
+function extractAllImages(html, base) {
+  const seen = new Set();
+  const images = [];
+
+  const imgRe = /<img\b([^>]*?)(?:\/>|>)/gi;
+  let m;
+  while ((m = imgRe.exec(html)) !== null) {
+    const src = extractImgSrc(m[1], base);
+    if (src && isContentImage(src) && !seen.has(src)) {
+      seen.add(src);
+      const altMatch = m[1].match(/alt=["']([^"']*)["']/i);
+      const alt = altMatch ? altMatch[1].trim() : '';
+      images.push({ src, alt });
+    }
   }
+
+  return images;
 }
 
-// Returns true for images that look like content charts (not icons/logos/avatars)
-function isContentImage(src, alt) {
-  if (!src) return false;
-  // Skip tiny tracking pixels, data URIs, and obvious UI icons
-  if (src.startsWith('data:')) return false;
-  if (/\/(icon|logo|avatar|sprite|pixel|badge|button)\b/i.test(src)) return false;
-  // Skip very short filenames that are likely icons
-  const fname = src.split('/').pop().split('?')[0];
-  if (fname.length < 5) return false;
-  // Prefer known chart patterns (jpg/png/gif/webp, not svg icons)
-  return /\.(jpe?g|png|gif|webp)(\?|$)/i.test(src);
-}
-
-// Extract the main forecast text from the page HTML.
-// Images inside the content are replaced with [[IMG:url:alt]] tokens so they
-// can be re-inserted at the correct position when rendering in the browser.
-function extractContent(html, pageUrl) {
-  const BASE = pageUrl || 'https://wavecast.com/socal/';
-
-  // Remove noisy sections
+// Extract the main forecast text, replacing inline images with [[IMG:url|alt]] tokens.
+function extractContent(html, base) {
+  // Remove noisy chrome
   let cleaned = html
     .replace(/<!--[\s\S]*?-->/g, '')
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
@@ -92,49 +146,47 @@ function extractContent(html, pageUrl) {
     .replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, '')
     .replace(/<aside\b[^<]*(?:(?!<\/aside>)<[^<]*)*<\/aside>/gi, '');
 
-  // Try to isolate the main article/post content
-  const contentPatterns = [
-    /<article[^>]*>([\s\S]*?)<\/article>/i,
-    /<div[^>]*class="[^"]*entry[- ]content[^"]*"[^>]*>([\s\S]*?)<\/div\s*>/i,
-    /<div[^>]*class="[^"]*post[- ]content[^"]*"[^>]*>([\s\S]*?)<\/div\s*>/i,
-    /<div[^>]*class="[^"]*forecast[^"]*"[^>]*>([\s\S]*?)<\/div\s*>/i,
-    /<div[^>]*class="[^"]*content[^"]*"[^>]*>([\s\S]*?)<\/div\s*>/i,
-    /<main[^>]*>([\s\S]*?)<\/main>/i,
-  ];
-
+  // Try to find the main post content block — try multiple selectors
+  // Use a greedy inner match for divs so we don't stop at the first nested </div>
   let contentHtml = null;
-  for (const pattern of contentPatterns) {
-    const match = cleaned.match(pattern);
-    if (match && match[1] && match[1].length > 300) {
-      contentHtml = match[1];
-      break;
+
+  // Strategy 1: <article> tag (most reliable on WordPress)
+  const articleMatch = cleaned.match(/<article\b[^>]*>([\s\S]*)<\/article>/i);
+  if (articleMatch && articleMatch[1].length > 300) {
+    contentHtml = articleMatch[1];
+  }
+
+  // Strategy 2: .entry-content or .post-content div — use greedy match
+  if (!contentHtml) {
+    const divMatch = cleaned.match(/<div[^>]*class="[^"]*(?:entry|post)[- ]content[^"]*"[^>]*>([\s\S]*)<\/div>/i);
+    if (divMatch && divMatch[1].length > 300) {
+      contentHtml = divMatch[1];
     }
   }
 
+  // Strategy 3: <main> tag
+  if (!contentHtml) {
+    const mainMatch = cleaned.match(/<main\b[^>]*>([\s\S]*)<\/main>/i);
+    if (mainMatch && mainMatch[1].length > 300) {
+      contentHtml = mainMatch[1];
+    }
+  }
+
+  // Fallback: use the whole cleaned HTML
   if (!contentHtml) contentHtml = cleaned;
 
   // ── Replace <img> tags with inline tokens BEFORE stripping HTML ──────────
-  // This preserves image positions within the text flow.
-  contentHtml = contentHtml.replace(/<img\b([^>]*)>/gi, (match, attrs) => {
-    // Extract src
-    const srcMatch = attrs.match(/src=["']([^"']+)["']/i) ||
-                     attrs.match(/src=([^\s>]+)/i);
-    const src = srcMatch ? resolveUrl(srcMatch[1].trim(), BASE) : null;
-
-    // Extract alt / title for caption
-    const altMatch = attrs.match(/alt=["']([^"']*)["']/i);
-    const titleMatch = attrs.match(/title=["']([^"']*)["']/i);
-    const alt = (altMatch && altMatch[1]) || (titleMatch && titleMatch[1]) || '';
-
-    if (src && isContentImage(src, alt)) {
-      // Encode alt to avoid breaking the token (replace | with space)
-      const safeAlt = alt.replace(/\|/g, ' ').replace(/\n/g, ' ').trim();
-      return `\n[[IMG:${src}|${safeAlt}]]\n`;
+  contentHtml = contentHtml.replace(/<img\b([^>]*?)(?:\/>|>)/gi, (match, attrs) => {
+    const src = extractImgSrc(attrs, base);
+    if (src && isContentImage(src)) {
+      const altMatch = attrs.match(/alt=["']([^"']*)["']/i);
+      const alt = (altMatch ? altMatch[1] : '').replace(/[|\n]/g, ' ').trim();
+      return `\n[[IMG:${src}|${alt}]]\n`;
     }
-    return ''; // drop non-content images
+    return '';
   });
 
-  // Convert block-level HTML to readable plain text with structure
+  // Convert HTML to structured plain text
   let text = contentHtml
     .replace(/<h1[^>]*>([\s\S]*?)<\/h1>/gi, '\n\n■ $1\n')
     .replace(/<h2[^>]*>([\s\S]*?)<\/h2>/gi, '\n\n▸ $1\n')
@@ -148,7 +200,6 @@ function extractContent(html, pageUrl) {
     .replace(/<strong[^>]*>([\s\S]*?)<\/strong>/gi, '$1')
     .replace(/<em[^>]*>([\s\S]*?)<\/em>/gi, '$1')
     .replace(/<[^>]+>/g, '')
-    // Decode HTML entities
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
@@ -159,12 +210,11 @@ function extractContent(html, pageUrl) {
     .replace(/&#8216;|&#8217;/g, "'")
     .replace(/&#8220;|&#8221;/g, '"')
     .replace(/&#[0-9]+;/g, ' ')
-    // Clean whitespace — but preserve [[IMG:...]] tokens on their own lines
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{4,}/g, '\n\n\n')
     .trim();
 
-  // Strip WaveCast nav/subscribe boilerplate that appears before the actual forecast.
+  // Strip WaveCast subscribe/nav boilerplate before the forecast body
   const cutMarkers = [
     'Get notified when this report is updated.',
     'Get notified when this report is updated',
@@ -178,9 +228,9 @@ function extractContent(html, pageUrl) {
     }
   }
 
-  // Belt-and-suspenders: remove any leftover surf-chart nav block
+  // Remove surf-chart nav block (but keep any [[IMG:...]] tokens)
   text = text
-    .replace(/Surf Charts for SoCal[\s\S]*?Sunset Cliffs/gi, '')
+    .replace(/Surf Charts for SoCal[^\[]*?Sunset Cliffs/gi, '')
     .replace(/\n{4,}/g, '\n\n\n')
     .trim();
 
@@ -192,7 +242,6 @@ exports.handler = async (event) => {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Content-Type': 'application/json',
-    // Cache for 1 hour — WaveCast only publishes Sun/Tue/Thu so no need to hammer it
     'Cache-Control': 'public, max-age=3600',
   };
 
@@ -201,7 +250,8 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { html, status } = await fetchPage('https://wavecast.com/socal/');
+    const { html, status, finalUrl } = await fetchPage('https://wavecast.com/socal/');
+    const base = finalUrl || 'https://wavecast.com/socal/';
 
     if (status !== 200) {
       return {
@@ -212,11 +262,21 @@ exports.handler = async (event) => {
     }
 
     const title = extractTitle(html);
-    const text = extractContent(html, 'https://wavecast.com/socal/');
+    const text = extractContent(html, base);
 
-    // Trim to a reasonable size but keep full forecast content
-    const trimmed = text.length > 10000
-      ? text.substring(0, 10000) + '\n\n[See full report at wavecast.com/socal/]'
+    // Also extract a deduplicated image list from the full page as a reliable
+    // fallback — the frontend will use this if inline tokens didn't parse correctly.
+    // Filter out images already present as tokens in the text.
+    const tokenUrls = new Set();
+    const tokenRe = /\[\[IMG:([^\|]+)\|/g;
+    let tm;
+    while ((tm = tokenRe.exec(text)) !== null) tokenUrls.add(tm[1]);
+
+    const allImages = extractAllImages(html, base)
+      .filter(img => !tokenUrls.has(img.src)); // don't duplicate inline tokens
+
+    const trimmed = text.length > 12000
+      ? text.substring(0, 12000) + '\n\n[See full report at wavecast.com/socal/]'
       : text;
 
     return {
@@ -225,6 +285,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         title,
         text: trimmed,
+        images: allImages,          // full-page image list (fallback gallery)
         url: 'https://wavecast.com/socal/',
         fetched: new Date().toISOString(),
       })
